@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ศึกดวลแดนซ์ 2 คน (ปรับความไวได้) - Dance Battle 1v1</title>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Prompt', sans-serif; }
+    body {
+      background: #090d16;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px;
+      gap: 10px;
+    }
+
+    /* แถบควบคุมด้านบน */
+    .control-bar {
+      width: 100%;
+      max-width: 1240px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 10px 16px;
+      border-radius: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .title { font-size: 18px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 6px; }
+    .controls-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    select, input[type="number"], button {
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .slider-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #0f172a;
+      padding: 5px 10px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      font-size: 12px;
+    }
+    input[type="range"] { width: 90px; accent-color: #facc15; cursor: pointer; }
+    button { border: none; cursor: pointer; transition: transform 0.1s; }
+    button:active { transform: scale(0.95); }
+    .btn-cam { background: #3b82f6; }
+    .btn-play { background: #10b981; color: #052e16; font-weight: 800; font-size: 14px; padding: 7px 16px; }
+    .btn-full { background: #f59e0b; color: #000; font-weight: 700; }
+
+    /* เวทีแข่งเต้น */
+    .stage-container {
+      position: relative;
+      width: 100%;
+      max-width: 1240px;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 3px solid #334155;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    }
+
+    .stage-container:fullscreen {
+      max-width: 100vw;
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      border: none;
+    }
+
+    video { display: none; }
+    canvas {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* เส้นแบ่งครึ่งสนามตรงกลาง */
+    .center-divider {
+      position: absolute;
+      top: 0; bottom: 0; left: 50%;
+      width: 4px;
+      background: linear-gradient(to bottom, #38bdf8, #facc15, #f43f5e);
+      transform: translateX(-50%);
+      box-shadow: 0 0 20px rgba(250, 204, 21, 0.8);
+      z-index: 10;
+      pointer-events: none;
+    }
+    .vs-badge {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: #facc15;
+      color: #000;
+      font-size: 24px;
+      font-weight: 900;
+      width: 54px; height: 54px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      border: 4px solid #090d16;
+      box-shadow: 0 0 25px rgba(250, 204, 21, 0.9);
+      z-index: 12;
+      pointer-events: none;
+    }
+
+    /* แถบคะแนนและนาฬิกาด้านบน */
+    .hud-top {
+      position: absolute;
+      top: 16px; left: 20px; right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      z-index: 15;
+      pointer-events: none;
+    }
+
+    .player-card.p1 {
+      background: linear-gradient(135deg, rgba(2, 132, 199, 0.9), rgba(15, 23, 42, 0.85));
+      border: 3px solid #38bdf8;
+      border-radius: 16px;
+      padding: 10px 22px;
+      min-width: 240px;
+      box-shadow: 0 8px 25px rgba(56, 189, 248, 0.4);
+    }
+    .player-card.p2 {
+      background: linear-gradient(135deg, rgba(225, 29, 72, 0.9), rgba(15, 23, 42, 0.85));
+      border: 3px solid #fb7185;
+      border-radius: 16px;
+      padding: 10px 22px;
+      min-width: 240px;
+      text-align: right;
+      box-shadow: 0 8px 25px rgba(244, 63, 94, 0.4);
+    }
+    .p-name { font-size: 16px; font-weight: 700; opacity: 0.95; }
+    .p-score { font-size: 46px; font-weight: 900; line-height: 1.05; font-variant-numeric: tabular-nums; }
+    .p-combo { font-size: 13px; font-weight: 700; color: #facc15; margin-top: 2px; }
+
+    .timer-box {
+      background: rgba(15, 23, 42, 0.92);
+      border: 3px solid #facc15;
+      padding: 8px 26px;
+      border-radius: 999px;
+      text-align: center;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.7);
+    }
+    .timer-label { font-size: 11px; color: #facc15; font-weight: 700; letter-spacing: 1px; }
+    .timer-val { font-size: 38px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+
+    /* หลอดพลังความมันส์ด้านล่าง */
+    .energy-bar-wrap {
+      position: absolute;
+      bottom: 18px;
+      width: 42%;
+      background: rgba(15, 23, 42, 0.85);
+      padding: 8px 14px;
+      border-radius: 12px;
+      border: 1px solid #475569;
+      z-index: 15;
+      pointer-events: none;
+    }
+    .energy-bar-wrap.p1 { left: 20px; }
+    .energy-bar-wrap.p2 { right: 20px; }
+    .energy-label { font-size: 12px; font-weight: 700; margin-bottom: 4px; display: flex; justify-content: space-between; }
+    .energy-track { width: 100%; height: 14px; background: #1e293b; border-radius: 999px; overflow: hidden; }
+    .energy-fill.p1 { height: 100%; width: 0%; background: linear-gradient(90deg, #0284c7, #38bdf8, #facc15); transition: width 0.08s; }
+    .energy-fill.p2 { height: 100%; width: 0%; background: linear-gradient(90deg, #e11d48, #fb7185, #facc15); transition: width 0.08s; }
+
+    /* หน้าจอทับตรงกลาง */
+    .center-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(9, 13, 22, 0.8);
+      backdrop-filter: blur(4px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      z-index: 30;
+      padding: 20px;
+    }
+    .big-countdown {
+      font-size: 130px;
+      font-weight: 900;
+      color: #facc15;
+      text-shadow: 0 0 40px rgba(250, 204, 21, 0.9);
+      animation: popScale 0.5s ease-out;
+    }
+    .winner-card {
+      background: linear-gradient(145deg, #1e293b, #0f172a);
+      border: 4px solid #facc15;
+      padding: 32px 48px;
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+    }
+    .winner-title { font-size: 42px; font-weight: 900; color: #facc15; margin: 10px 0; }
+    .score-summary { display: flex; gap: 30px; justify-content: center; margin: 20px 0; font-size: 22px; font-weight: 700; }
+
+    @keyframes popScale { 0% { transform: scale(0.3); opacity: 0; } 80% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
+  </style>
+</head>
+<body>
+
+  <!-- แถบควบคุม -->
+  <div class="control-bar">
+    <div class="title">🦴 ศึกดวลแดนซ์ 1v1</div>
+    <div class="controls-group">
+      <select id="cameraSelect"></select>
+      <button class="btn-cam" id="btnOpenCam" onclick="initPoseAndCamera()">📷 เปิดกล้อง & โหลด AI</button>
+
+      <!-- ตัวปรับความไว (Deadzone) -->
+      <div class="slider-box" title="ปรับลดลงหากคะแนนขึ้นง่ายเกินไป">
+        <span>🎚️ ความไว:</span>
+        <input type="range" id="sensitivitySlider" min="1" max="10" value="4" oninput="updateSensitivityLabel(this.value)">
+        <span id="sensLabel" style="color:#facc15; font-weight:700; min-width:52px;">ปานกลาง</span>
+      </div>
+
+      <!-- ตัวปรับความเร็วในการบวกคะแนน -->
+      <select id="scoreRateSelect" title="เลือกความเร็วในการขึ้นของคะแนน">
+        <option value="0.05">คะแนนขึ้นช้า (หลักร้อย)</option>
+        <option value="0.12" selected>คะแนนพอดี (แนะนำ)</option>
+        <option value="0.28">คะแนนขึ้นไว (หลักพัน)</option>
+      </select>
+
+      <label style="font-size:12px; color:#cbd5e1;">เวลา:</label>
+      <input type="number" id="gameDurationInput" value="30" min="10" max="120" style="width: 56px;">
+
+      <label style="font-size:12px; color:#cbd5e1; display:flex; align-items:center; gap:4px;">
+        <input type="checkbox" id="skeletonToggle" checked> โครงกระดูก
+      </label>
+
+      <label style="font-size:12px; color:#cbd5e1; display:flex; align-items:center; gap:4px;">
+        <input type="checkbox" id="musicToggle" checked> 🎵 เพลง
+      </label>
+
+      <button class="btn-play" onclick="startCountdown()">🔥 เริ่มแข่ง!</button>
+      <button class="btn-full" onclick="toggleFullscreen()">⛶ เต็มจอ</button>
+    </div>
+  </div>
+
+  <!-- เวทีแข่งเต้น -->
+  <div class="stage-container" id="stageContainer">
+    <video id="videoInput" playsinline></video>
+    <canvas id="gameCanvas" width="1280" height="720"></canvas>
+
+    <div class="center-divider"></div>
+    <div class="vs-badge">VS</div>
+
+    <!-- แถบคะแนน -->
+    <div class="hud-top">
+      <div class="player-card p1">
+        <div class="p-name">🔵 ผู้เล่นที่ 1 (ฝั่งซ้าย)</div>
+        <div class="p-score" id="scoreP1">0</div>
+        <div class="p-combo" id="statusP1">รอตรวจจับโครงกระดูก...</div>
+      </div>
+
+      <div class="timer-box">
+        <div class="timer-label">TIME LEFT</div>
+        <div class="timer-val" id="timerDisplay">30</div>
+      </div>
+
+      <div class="player-card p2">
+        <div class="p-name">ผู้เล่นที่ 2 (ฝั่งขวา) 🔴</div>
+        <div class="p-score" id="scoreP2">0</div>
+        <div class="p-combo" id="statusP2">รอตรวจจับโครงกระดูก...</div>
+      </div>
+    </div>
+
+    <!-- หลอดวัดความมันส์ -->
+    <div class="energy-bar-wrap p1">
+      <div class="energy-label"><span>⚡ ความเร็วการขยับข้อต่อ (ซ้าย)</span><span id="intensityP1">0%</span></div>
+      <div class="energy-track"><div class="energy-fill p1" id="barP1"></div></div>
+    </div>
+
+    <div class="energy-bar-wrap p2">
+      <div class="energy-label"><span>⚡ ความเร็วการขยับข้อต่อ (ขวา)</span><span id="intensityP2">0%</span></div>
+      <div class="energy-track"><div class="energy-fill p2" id="barP2"></div></div>
+    </div>
+
+    <!-- หน้าจอทับตรงกลาง -->
+    <div class="center-overlay" id="centerOverlay">
+      <div id="overlayContent">
+        <h2 style="font-size: 34px; margin-bottom: 10px;">ยืนให้เห็นโครงกระดูกเต็มตัว ฝั่งซ้าย และ ฝั่งขวา!</h2>
+        <p style="font-size: 17px; color: #cbd5e1;">กดปุ่ม <strong>"📷 เปิดกล้อง & โหลด AI"</strong> ด้านบนเพื่อเริ่มต้น</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { PoseLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+
+    const video = document.getElementById('videoInput');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const cameraSelect = document.getElementById('cameraSelect');
+
+    let poseLandmarker = null;
+    let isCameraRunning = false;
+    let isGamePlaying = false;
+    let lastVideoTime = -1;
+    let lastScoreCalcTime = 0; // ตัวควบคุมจังหวะการคำนวณคะแนน (ไม่ให้รัวตาม Hz จอ)
+
+    let score1 = 0;
+    let score2 = 0;
+    let timeLeft = 30;
+    let gameTimerInterval = null;
+    let musicInterval = null;
+
+    let prevJointsP1 = null;
+    let prevJointsP2 = null;
+    let particles = [];
+
+    const POSE_CONNECTIONS = [
+      [11, 12], [11, 13], [13, 15], [12, 14], [14, 16],
+      [11, 23], [12, 24], [23, 24],
+      [23, 25], [25, 27], [24, 26], [26, 28],
+      [15, 17], [15, 19], [16, 18], [16, 20],
+      [27, 29], [27, 31], [28, 30], [28, 32]
+    ];
+
+    window.updateSensitivityLabel = function(val) {
+      const v = parseInt(val);
+      const label = document.getElementById('sensLabel');
+      if (v <= 2) label.textContent = "ต่ำมาก (เต้นแรง)";
+      else if (v <= 5) label.textContent = "ปานกลาง";
+      else if (v <= 8) label.textContent = "ไว";
+      else label.textContent = "ไวสุดๆ";
+    };
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeatNote(step) {
+      if (!document.getElementById('musicToggle').checked) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const now = audioCtx.currentTime;
+
+      if (step % 2 === 0) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now); osc.stop(now + 0.15);
+      }
+
+      const notes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 293.66, 392.00];
+      const osc2 = audioCtx.createOscillator();
+      const gain2 = audioCtx.createGain();
+      osc2.type = 'square';
+      osc2.frequency.setValueAtTime(notes[step % notes.length], now);
+      gain2.gain.setValueAtTime(0.08, now);
+      gain2.gain.exponentialRampToValueAtTime(0.005, now + 0.18);
+      osc2.connect(gain2); gain2.connect(audioCtx.destination);
+      osc2.start(now); osc2.stop(now + 0.18);
+    }
+
+    function playFanfare() {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.12);
+        gain.gain.setValueAtTime(0.25, audioCtx.currentTime + idx * 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + idx * 0.12 + 0.4);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime + idx * 0.12);
+        osc.stop(audioCtx.currentTime + idx * 0.12 + 0.4);
+      });
+    }
+
+    async function loadCameras() {
+      try {
+        const temp = await navigator.mediaDevices.getUserMedia({ video: true });
+        temp.getTracks().forEach(t => t.stop());
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cams = devices.filter(d => d.kind === 'videoinput');
+        cameraSelect.innerHTML = '';
+        cams.forEach((cam, idx) => {
+          const opt = document.createElement('option');
+          opt.value = cam.deviceId;
+          opt.text = cam.label || `Camera ${idx + 1}`;
+          if (opt.text.toLowerCase().includes('iriun')) opt.selected = true;
+          cameraSelect.appendChild(opt);
+        });
+      } catch (e) {
+        console.warn("กรุณารันผ่าน localhost เพื่อใช้งานกล้อง:", e);
+      }
+    }
+
+    window.initPoseAndCamera = async function() {
+      const btn = document.getElementById('btnOpenCam');
+      btn.textContent = "⏳ กำลังโหลด AI...";
+      btn.disabled = true;
+
+      try {
+        const vision = await FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+        );
+        poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+            delegate: "GPU"
+          },
+          runningMode: "VIDEO",
+          numPoses: 2,
+          minPoseDetectionConfidence: 0.55,
+          minPosePresenceConfidence: 0.55,
+          minTrackingConfidence: 0.55
+        });
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: cameraSelect.value ? { exact: cameraSelect.value } : undefined, width: 1280, height: 720 },
+          audio: false
+        });
+        video.srcObject = stream;
+        await video.play();
+
+        isCameraRunning = true;
+        btn.textContent = "✅ พร้อมใช้งาน";
+        requestAnimationFrame(predictWebcam);
+      } catch (err) {
+        alert("เกิดข้อผิดพลาด: " + err.message);
+        btn.textContent = "📷 เปิดกล้อง & โหลด AI";
+        btn.disabled = false;
+      }
+    };
+
+    function predictWebcam() {
+      if (!isCameraRunning) return;
+
+      // วาดภาพกล้องแบบ Mirror
+      ctx.save();
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
+
+      const now = performance.now();
+
+      if (poseLandmarker && video.currentTime !== lastVideoTime) {
+        lastVideoTime = video.currentTime;
+        const results = poseLandmarker.detectForVideo(video, now);
+
+        // คำนวณคะแนนทุกๆ 100 มิลลิวินาที (10 ครั้ง/วินาที) เพื่อไม่ให้คะแนนไหลไวเกินไปตาม Hz จอ
+        const shouldCalcScore = (now - lastScoreCalcTime) >= 100;
+        if (shouldCalcScore) lastScoreCalcTime = now;
+
+        let foundP1 = false;
+        let foundP2 = false;
+
+        if (results.landmarks && results.landmarks.length > 0) {
+          results.landmarks.forEach((landmarks) => {
+            const centerX = 1 - ((landmarks[23].x + landmarks[24].x) / 2);
+            const isLeftPlayer = centerX < 0.5;
+
+            const boneColor = isLeftPlayer ? '#38bdf8' : '#fb7185';
+            const jointColor = '#facc15';
+
+            if (document.getElementById('skeletonToggle').checked) {
+              drawNeonSkeleton(landmarks, boneColor, jointColor);
+            }
+
+            if (shouldCalcScore) {
+              // จับเฉพาะข้อต่อหลัก: ไหล่ (11,12), ศอก (13,14), ข้อมือ (15,16), เข่า (25,26)
+              const keyIndices = [11, 12, 13, 14, 15, 16, 25, 26];
+              const currentJoints = keyIndices.map(idx => ({
+                x: 1 - landmarks[idx].x,
+                y: landmarks[idx].y
+              }));
+
+              if (isLeftPlayer) {
+                foundP1 = true;
+                const speedPct = calcMovementIntensity(prevJointsP1, currentJoints);
+                prevJointsP1 = currentJoints;
+                updatePlayerMetrics(1, speedPct, (1 - landmarks[0].x) * canvas.width, landmarks[0].y * canvas.height);
+              } else {
+                foundP2 = true;
+                const speedPct = calcMovementIntensity(prevJointsP2, currentJoints);
+                prevJointsP2 = currentJoints;
+                updatePlayerMetrics(2, speedPct, (1 - landmarks[0].x) * canvas.width, landmarks[0].y * canvas.height);
+              }
+            }
+          });
+        }
+
+        if (shouldCalcScore) {
+          if (!foundP1) {
+            prevJointsP1 = null;
+            updatePlayerMetrics(1, 0, 0, 0, false);
+          }
+          if (!foundP2) {
+            prevJointsP2 = null;
+            updatePlayerMetrics(2, 0, 0, 0, false);
+          }
+        }
+      }
+
+      updateAndDrawParticles();
+      requestAnimationFrame(predictWebcam);
+    }
+
+    function drawNeonSkeleton(landmarks, boneColor, jointColor) {
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = boneColor;
+
+      ctx.strokeStyle = boneColor;
+      ctx.lineWidth = 7;
+      POSE_CONNECTIONS.forEach(([i, j]) => {
+        const p1 = landmarks[i];
+        const p2 = landmarks[j];
+        if (p1 && p2 && p1.visibility > 0.4 && p2.visibility > 0.4) {
+          ctx.beginPath();
+          ctx.moveTo((1 - p1.x) * canvas.width, p1.y * canvas.height);
+          ctx.lineTo((1 - p2.x) * canvas.width, p2.y * canvas.height);
+          ctx.stroke();
+        }
+      });
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5;
+      POSE_CONNECTIONS.forEach(([i, j]) => {
+        const p1 = landmarks[i];
+        const p2 = landmarks[j];
+        if (p1 && p2 && p1.visibility > 0.4 && p2.visibility > 0.4) {
+          ctx.beginPath();
+          ctx.moveTo((1 - p1.x) * canvas.width, p1.y * canvas.height);
+          ctx.lineTo((1 - p2.x) * canvas.width, p2.y * canvas.height);
+          ctx.stroke();
+        }
+      });
+
+      ctx.shadowColor = jointColor;
+      for (let i = 11; i < landmarks.length; i++) {
+        const pt = landmarks[i];
+        if (pt && pt.visibility > 0.4) {
+          const x = (1 - pt.x) * canvas.width;
+          const y = pt.y * canvas.height;
+          ctx.fillStyle = jointColor;
+          ctx.beginPath();
+          ctx.arc(x, y, 7, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+
+    // คำนวณความเร็วการขยับโดยอิงจากแถบความไว (Sensitivity Slider)
+    function calcMovementIntensity(prev, curr) {
+      if (!prev || !curr) return 0;
+      let totalDist = 0;
+      for (let i = 0; i < curr.length; i++) {
+        const dx = curr[i].x - prev[i].x;
+        const dy = curr[i].y - prev[i].y;
+        totalDist += Math.hypot(dx, dy);
+      }
+
+      // แปลงค่าสไลเดอร์ 1-10 ให้เป็นค่า Deadzone (ยิ่งเลขน้อย ยิ่งต้องขยับแรงถึงจะผ่าน Deadzone)
+      const sensVal = parseInt(document.getElementById('sensitivitySlider').value); // 1 ถึง 10
+      const deadzone = 0.28 - (sensVal * 0.022); // sens=1 -> deadzone 0.258 (ยาก) | sens=10 -> deadzone 0.06 (ง่าย)
+      const maxRange = 0.85;
+
+      if (totalDist < deadzone) return 0;
+      const effectiveDist = totalDist - deadzone;
+      return Math.min(100, Math.round((effectiveDist / maxRange) * 100));
+    }
+
+    function updatePlayerMetrics(playerNum, pct, headX, headY, isDetected = true) {
+      const barEl = document.getElementById(`barP${playerNum}`);
+      const intEl = document.getElementById(`intensityP${playerNum}`);
+      const statusEl = document.getElementById(`statusP${playerNum}`);
+      const scoreEl = document.getElementById(`scoreP${playerNum}`);
+
+      barEl.style.width = pct + '%';
+      intEl.textContent = pct + '%';
+
+      if (!isDetected) {
+        statusEl.textContent = "⚠️ ไม่พบตัวผู้เล่นในฝั่งนี้";
+        return;
+      }
+
+      if (!isGamePlaying) {
+        statusEl.textContent = "✅ พร้อมเต้น!";
+        return;
+      }
+
+      const rateMultiplier = parseFloat(document.getElementById('scoreRateSelect').value);
+
+      if (pct >= 10) {
+        const pts = Math.max(1, Math.round(pct * rateMultiplier));
+        if (playerNum === 1) {
+          score1 += pts;
+          scoreEl.textContent = score1.toLocaleString();
+        } else {
+          score2 += pts;
+          scoreEl.textContent = score2.toLocaleString();
+        }
+        statusEl.textContent = pct > 65 ? `🔥 SUPER COMBO! +${pts}` : `💃 กำลังเต้น! +${pts}`;
+
+        if (pct > 55) {
+          spawnParticles(headX, headY + 120, playerNum === 1 ? '#38bdf8' : '#fb7185');
+        }
+      } else {
+        statusEl.textContent = "ขยับแขนขาให้กว้างขึ้น!";
+      }
+    }
+
+    function spawnParticles(x, y, color) {
+      for (let i = 0; i < 4; i++) {
+        particles.push({
+          x: x + (Math.random() - 0.5) * 180,
+          y: y + (Math.random() - 0.5) * 180,
+          vx: (Math.random() - 0.5) * 10,
+          vy: (Math.random() - 1) * 10,
+          life: 1.0,
+          color: color
+        });
+      }
+    }
+
+    function updateAndDrawParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.045;
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+        } else {
+          ctx.save();
+          ctx.globalAlpha = p.life;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+    }
+
+    window.startCountdown = function() {
+      if (!isCameraRunning) {
+        alert("กรุณากดปุ่ม '📷 เปิดกล้อง & โหลด AI' ก่อนเริ่มแข่งครับ!");
+        return;
+      }
+      clearInterval(gameTimerInterval);
+      clearInterval(musicInterval);
+      isGamePlaying = false;
+      score1 = 0;
+      score2 = 0;
+      document.getElementById('scoreP1').textContent = '0';
+      document.getElementById('scoreP2').textContent = '0';
+
+      const overlay = document.getElementById('centerOverlay');
+      const content = document.getElementById('overlayContent');
+      overlay.style.display = 'flex';
+
+      let count = 3;
+      content.innerHTML = `<div class="big-countdown">${count}</div><p style="font-size:24px;">เตรียมตัวออกลวดลาย!</p>`;
+
+      const cdTimer = setInterval(() => {
+        count--;
+        if (count > 0) {
+          content.innerHTML = `<div class="big-countdown">${count}</div><p style="font-size:24px;">เตรียมตัวออกลวดลาย!</p>`;
+        } else if (count === 0) {
+          content.innerHTML = `<div class="big-countdown" style="color:#10b981;">GO!</div>`;
+        } else {
+          clearInterval(cdTimer);
+          overlay.style.display = 'none';
+          beginMatch();
+        }
+      }, 900);
+    };
+
+    function beginMatch() {
+      isGamePlaying = true;
+      timeLeft = parseInt(document.getElementById('gameDurationInput').value) || 30;
+      document.getElementById('timerDisplay').textContent = timeLeft;
+
+      let beatStep = 0;
+      musicInterval = setInterval(() => {
+        if (isGamePlaying) {
+          playBeatNote(beatStep);
+          beatStep++;
+        }
+      }, 280);
+
+      gameTimerInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timerDisplay').textContent = timeLeft;
+        if (timeLeft <= 0) {
+          endMatch();
+        }
+      }, 1000);
+    }
+
+    function endMatch() {
+      isGamePlaying = false;
+      clearInterval(gameTimerInterval);
+      clearInterval(musicInterval);
+      playFanfare();
+
+      const overlay = document.getElementById('centerOverlay');
+      const content = document.getElementById('overlayContent');
+      overlay.style.display = 'flex';
+
+      let winnerText = "🤝 เสมอกันอย่างสุดมันส์!";
+      if (score1 > score2) winnerText = "🏆 ผู้ชนะคือ ผู้เล่นที่ 1 (ฝั่งซ้าย)!";
+      else if (score2 > score1) winnerText = "🏆 ผู้ชนะคือ ผู้เล่นที่ 2 (ฝั่งขวา)!";
+
+      content.innerHTML = `
+        <div class="winner-card">
+          <div style="font-size: 60px;">🎉</div>
+          <div class="winner-title">${winnerText}</div>
+          <div class="score-summary">
+            <span style="color:#38bdf8;">🔵 ฝั่งซ้าย: ${score1.toLocaleString()} แต้ม</span>
+            <span style="color:#fb7185;">🔴 ฝั่งขวา: ${score2.toLocaleString()} แต้ม</span>
+          </div>
+          <button class="btn-play" style="font-size:18px; padding:12px 30px;" onclick="startCountdown()">🔄 แข่งคู่ต่อไป!</button>
+        </div>
+      `;
+    }
+
+    window.toggleFullscreen = function() {
+      const stage = document.getElementById('stageContainer');
+      if (!document.fullscreenElement) {
+        stage.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    };
+
+    loadCameras();
+  </script>
+</body>
+</html>

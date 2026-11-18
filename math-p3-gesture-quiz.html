@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เกมคณิตคิดเร็ว ป.3 (การคูณ) - จับท่ามือผ่านกล้อง</title>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <!-- โหลดไลบรารี MediaPipe Hands สำหรับตรวจจับนิ้วมือ -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Prompt', sans-serif; }
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+    }
+
+    /* แถบควบคุมด้านบน */
+    .top-controls {
+      width: 100%;
+      max-width: 1200px;
+      background: rgba(30, 41, 59, 0.85);
+      border: 1px solid #334155;
+      padding: 10px 20px;
+      border-radius: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .game-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .cam-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    select, button {
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    select { background: #0f172a; color: #fff; border: 1px solid #475569; }
+    .btn-start { background: #10b981; color: #052e16; }
+    .btn-start:hover { background: #34d399; }
+    .btn-fullscreen { background: #3b82f6; color: #fff; }
+
+    /* พื้นที่หลักของเกม (แบ่งซ้ายกล้อง - ขวาโจทย์คำถาม) */
+    .game-arena {
+      width: 100%;
+      max-width: 1200px;
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    /* โหมดเต็มจอ */
+    .game-arena:fullscreen {
+      max-width: 100vw;
+      height: 100vh;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      padding: 24px;
+    }
+
+    /* กล่องกล้องซ้ายมือ */
+    .camera-card {
+      position: relative;
+      background: #000;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 3px solid #334155;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 460px;
+    }
+    video { display: none; }
+    canvas {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1); /* กลับด้านซ้าย-ขวาให้เหมือนกระจก เด็กจะได้ไม่งง */
+    }
+
+    /* ป้ายแสดงจำนวนนิ้วที่ตรวจจับได้ */
+    .finger-hud {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(6px);
+      border: 2px solid #38bdf8;
+      padding: 10px 18px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 10;
+    }
+    .finger-count-num {
+      font-size: 36px;
+      font-weight: 800;
+      color: #facc15;
+      line-height: 1;
+    }
+    .finger-label { font-size: 14px; color: #e2e8f0; }
+
+    /* แถบโหลดยืนยันคำตอบ (Hold to Confirm) */
+    .hold-progress-wrapper {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1px solid #475569;
+      z-index: 10;
+    }
+    .hold-text {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .progress-bar-bg {
+      width: 100%;
+      height: 14px;
+      background: #334155;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #facc15, #10b981);
+      transition: width 0.08s linear;
+    }
+
+    /* กล่องโจทย์คณิตศาสตร์ขวามือ */
+    .quiz-card {
+      background: rgba(30, 41, 59, 0.9);
+      border: 2px solid #475569;
+      border-radius: 20px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    }
+
+    .quiz-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 12px;
+    }
+    .q-badge {
+      background: #6366f1;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .score-badge {
+      background: #f59e0b;
+      color: #000;
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    /* ตัวเลขโจทย์การคูณใหญ่ๆ */
+    .question-box {
+      text-align: center;
+      padding: 24px 10px;
+      background: #0f172a;
+      border-radius: 16px;
+      border: 2px dashed #38bdf8;
+      margin: 16px 0;
+    }
+    .question-hint { font-size: 14px; color: #94a3b8; margin-bottom: 4px; }
+    .question-math {
+      font-size: 56px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 2px;
+    }
+
+    /* ตัวเลือก 4 ข้อ (ชู 1-4 นิ้ว) */
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .option-item {
+      background: #1e293b;
+      border: 3px solid #475569;
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s;
+    }
+    .option-item.active {
+      border-color: #facc15;
+      background: rgba(250, 204, 21, 0.15);
+      transform: scale(1.03);
+    }
+    .option-item.correct {
+      border-color: #10b981;
+      background: #065f46;
+      transform: scale(1.05);
+    }
+    .option-item.wrong {
+      border-color: #ef4444;
+      background: #7f1d1d;
+    }
+    .finger-icon {
+      width: 44px;
+      height: 44px;
+      background: #334155;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 800;
+      color: #38bdf8;
+      flex-shrink: 0;
+    }
+    .option-val {
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    /* หน้าจอสรุปคะแนนตอนจบ 10 ข้อ */
+    .result-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.95);
+      z-index: 50;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+    }
+    .result-box {
+      background: #1e293b;
+      border: 3px solid #facc15;
+      padding: 40px 50px;
+      border-radius: 24px;
+      max-width: 500px;
+    }
+    .result-score { font-size: 64px; font-weight: 800; color: #10b981; margin: 12px 0; }
+  </style>
+</head>
+<body>
+
+  <!-- แถบควบคุมด้านบน -->
+  <div class="top-controls">
+    <div class="game-title">🖐️ คณิตคิดเร็ว ป.3 (การคูณ) — ชูนิ้วตอบคำถาม</div>
+    <div class="cam-group">
+      <select id="cameraSelect"></select>
+      <button class="btn-start" onclick="initCameraAndGame()">▶ เปิดกล้อง & เริ่มเกม</button>
+      <button class="btn-fullscreen" onclick="toggleFullscreen()">⛶ เต็มจอหน้าชั้นเรียน</button>
+    </div>
+  </div>
+
+  <!-- พื้นที่เล่นเกม -->
+  <div class="game-arena" id="gameArena">
+    <!-- ฝั่งซ้าย: กล้องตรวจจับท่ามือ -->
+    <div class="camera-card">
+      <video id="inputVideo" playsinline></video>
+      <canvas id="outputCanvas" width="640" height="480"></canvas>
+
+      <div class="finger-hud">
+        <div class="finger-count-num" id="detectedFingers">0</div>
+        <div class="finger-label">
+          <strong>นิ้วที่ชูอยู่</strong><br>
+          <span id="gestureHint">ชู 1-4 นิ้ว เพื่อเลือกข้อ</span>
+        </div>
+      </div>
+
+      <div class="hold-progress-wrapper">
+        <div class="hold-text">
+          <span id="holdStatusText">✋ ชูนิ้วค้างไว้ 1.5 วินาที เพื่อยืนยันคำตอบ</span>
+          <span id="holdPercent">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="holdProgressBar"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ฝั่งขวา: โจทย์คณิตศาสตร์ ป.3 -->
+    <div class="quiz-card">
+      <div class="quiz-header">
+        <div class="q-badge" id="questionCounter">ข้อที่ 1 / 10</div>
+        <div class="score-badge">⭐ คะแนน: <span id="scoreDisplay">0</span></div>
+      </div>
+
+      <div class="question-box">
+        <div class="question-hint" id="questionLevel">ระดับ: สูตรคูณพื้นฐาน</div>
+        <div class="question-math" id="questionText">7 × 8 = ?</div>
+      </div>
+
+      <div class="options-grid">
+        <div class="option-item" id="opt-1">
+          <div class="finger-icon">☝️1</div>
+          <div class="option-val" id="val-1">54</div>
+        </div>
+        <div class="option-item" id="opt-2">
+          <div class="finger-icon">✌️2</div>
+          <div class="option-val" id="val-2">56</div>
+        </div>
+        <div class="option-item" id="opt-3">
+          <div class="finger-icon">🤟3</div>
+          <div class="option-val" id="val-3">63</div>
+        </div>
+        <div class="option-item" id="opt-4">
+          <div class="finger-icon">🖖4</div>
+          <div class="option-val" id="val-4">48</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- หน้าต่างสรุปคะแนนเมื่อครบ 10 ข้อ -->
+  <div class="result-overlay" id="resultOverlay">
+    <div class="result-box">
+      <div style="font-size: 54px;">🏆</div>
+      <h2 style="font-size: 28px; margin-top: 8px;">จบเกมคณิตคิดเร็ว ป.3!</h2>
+      <div class="result-score"><span id="finalScore">0</span> / 10</div>
+      <p id="resultFeedback" style="color: #cbd5e1; margin-bottom: 24px;">เก่งมากครับ!</p>
+      <button class="btn-start" style="font-size: 18px; padding: 12px 28px;" onclick="restartGame()">🔄 เล่นใหม่อีกครั้ง</button>
+    </div>
+  </div>
+
+  <script>
+    // ชุดโจทย์คณิตคิดเร็ว การคูณ ป.3 จำนวน 10 ข้อ (เรียงจากง่ายไปท้าทายตามหลักสูตร ป.3)
+    const quizData = [
+      { level: "ข้อ 1: สูตรคูณแม่ 6", q: "6 × 7 = ?", options: [42, 48, 36, 49], answer: 1 },
+      { level: "ข้อ 2: สูตรคูณแม่ 8", q: "8 × 9 = ?", options: [64, 81, 72, 63], answer: 3 },
+      { level: "ข้อ 3: สูตรคูณแม่ 12", q: "12 × 5 = ?", options: [50, 60, 55, 72], answer: 2 },
+      { level: "ข้อ 4: การคูณกับ 10", q: "15 × 10 = ?", options: [105, 1500, 25, 150], answer: 4 },
+      { level: "ข้อ 5: การคูณ 2 หลัก (ไม่มีทด)", q: "21 × 4 = ?", options: [84, 64, 81, 48], answer: 1 },
+      { level: "ข้อ 6: การคูณ 2 หลัก (ไม่มีทด)", q: "32 × 3 = ?", options: [66, 93, 96, 69], answer: 3 },
+      { level: "ข้อ 7: การคูณ 2 หลัก (มีทด)", q: "14 × 3 = ?", options: [32, 42, 52, 37], answer: 2 },
+      { level: "ข้อ 8: การคูณ 2 หลัก (มีทด)", q: "25 × 4 = ?", options: [80, 90, 120, 100], answer: 4 },
+      { level: "ข้อ 9: การคูณจำนวนเต็มสิบ", q: "30 × 6 = ?", options: [180, 120, 160, 90], answer: 1 },
+      { level: "ข้อ 10: โจทย์ท้าทาย ป.3", q: "16 × 5 = ?", options: [75, 85, 80, 90], answer: 3 }
+    ];
+
+    let currentQIndex = 0;
+    let score = 0;
+    let isLocked = false; // ล็อกระหว่างเฉลยข้อปัจจุบัน
+
+    // ตัวแปรจับเวลาการค้างท่ามือ (1.5 วินาที)
+    let currentHeldFinger = 0;
+    let holdStartTime = 0;
+    const HOLD_DURATION = 1500; // 1500 ms = 1.5 วินาที
+
+    const videoElement = document.getElementById('inputVideo');
+    const canvasElement = document.getElementById('outputCanvas');
+    const canvasCtx = canvasElement.getContext('2d');
+    const cameraSelect = document.getElementById('cameraSelect');
+
+    // ระบบสร้างเสียงเอฟเฟกต์ (ไม่ต้องใช้ไฟล์ MP3)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'correct') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+        osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.5);
+      } else if (type === 'wrong') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(130, audioCtx.currentTime + 0.35);
+        gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.4);
+      }
+    }
+
+    // โหลดรายชื่อกล้อง (Iriun Webcam)
+    async function loadCameras() {
+      try {
+        const temp = await navigator.mediaDevices.getUserMedia({ video: true });
+        temp.getTracks().forEach(t => t.stop());
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cams = devices.filter(d => d.kind === 'videoinput');
+        cameraSelect.innerHTML = '';
+        cams.forEach((cam, idx) => {
+          const opt = document.createElement('option');
+          opt.value = cam.deviceId;
+          opt.text = cam.label || `Camera ${idx + 1}`;
+          if (opt.text.toLowerCase().includes('iriun')) opt.selected = true;
+          cameraSelect.appendChild(opt);
+        });
+      } catch (e) {
+        console.warn("กรุณารันผ่าน localhost เพื่อใช้งานกล้อง:", e);
+      }
+    }
+
+    // แสดงโจทย์ข้อปัจจุบัน
+    function renderQuestion() {
+      isLocked = false;
+      currentHeldFinger = 0;
+      holdStartTime = 0;
+      updateHoldUI(0, 0);
+
+      const item = quizData[currentQIndex];
+      document.getElementById('questionCounter').textContent = `ข้อที่ ${currentQIndex + 1} / ${quizData.length}`;
+      document.getElementById('questionLevel').textContent = item.level;
+      document.getElementById('questionText').textContent = item.q;
+
+      for (let i = 1; i <= 4; i++) {
+        const optEl = document.getElementById(`opt-${i}`);
+        optEl.className = 'option-item';
+        document.getElementById(`val-${i}`).textContent = item.options[i - 1];
+      }
+    }
+
+    // ตรวจคำตอบเมื่อชูนิ้วครบ 1.5 วินาที
+    function submitAnswer(selectedChoice) {
+      if (isLocked) return;
+      isLocked = true;
+
+      const correctChoice = quizData[currentQIndex].answer;
+      const selectedEl = document.getElementById(`opt-${selectedChoice}`);
+      const correctEl = document.getElementById(`opt-${correctChoice}`);
+
+      if (selectedChoice === correctChoice) {
+        selectedEl.classList.add('correct');
+        score++;
+        document.getElementById('scoreDisplay').textContent = score;
+        document.getElementById('holdStatusText').textContent = "🎉 ถูกต้อง! เก่งมาก!";
+        playSound('correct');
+      } else {
+        selectedEl.classList.add('wrong');
+        correctEl.classList.add('correct');
+        document.getElementById('holdStatusText').textContent = `❌ ผิดครับ คำตอบที่ถูกคือข้อ ${correctChoice}`;
+        playSound('wrong');
+      }
+
+      // ไปข้อถัดไปอัตโนมัติใน 2.2 วินาที
+      setTimeout(() => {
+        currentQIndex++;
+        if (currentQIndex < quizData.length) {
+          renderQuestion();
+        } else {
+          showFinalResult();
+        }
+      }, 2200);
+    }
+
+    function showFinalResult() {
+      document.getElementById('finalScore').textContent = score;
+      let msg = "สุดยอดเลยครับ! แม่นสูตรคูณ ป.3 มาก";
+      if (score < 5) msg = "ไม่เป็นไรครับ ลองฝึกท่องสูตรคูณแล้วมาแก้มือใหม่นะ!";
+      else if (score < 8) msg = "เก่งมากครับ อีกนิดเดียวจะเต็ม 10 แล้ว!";
+      document.getElementById('resultFeedback').textContent = msg;
+      document.getElementById('resultOverlay').style.display = 'flex';
+    }
+
+    function restartGame() {
+      currentQIndex = 0;
+      score = 0;
+      document.getElementById('scoreDisplay').textContent = 0;
+      document.getElementById('resultOverlay').style.display = 'none';
+      renderQuestion();
+    }
+
+    // อัปเดตหลอดโหลดและไฮไลต์ตัวเลือก
+    function updateHoldUI(finger, percent) {
+      document.getElementById('holdProgressBar').style.width = percent + '%';
+      document.getElementById('holdPercent').textContent = Math.round(percent) + '%';
+
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById(`opt-${i}`);
+        if (!isLocked) {
+          if (i === finger) el.classList.add('active');
+          else el.classList.remove('active');
+        }
+      }
+
+      if (!isLocked) {
+        if (finger >= 1 && finger <= 4) {
+          document.getElementById('holdStatusText').textContent = `⏳ กำลังเลือกข้อ ${finger} ... ค้างไว้!`;
+        } else if (finger === 0) {
+          document.getElementById('holdStatusText').textContent = "✊ กำมืออยู่ (พร้อมเริ่ม) — ชู 1-4 นิ้ว เพื่อตอบ";
+        } else {
+          document.getElementById('holdStatusText').textContent = "✋ ชูได้สูงสุด 4 นิ้วนะครับ";
+        }
+      }
+    }
+
+    // อัลกอริทึมนับจำนวนนิ้วที่ชูขึ้น (1-5 นิ้ว)
+    function countExtendedFingers(landmarks) {
+      let count = 0;
+      // 1. นิ้วชี้ (8 เทียบ 6), นิ้วกลาง (12 เทียบ 10), นิ้วนาง (16 เทียบ 14), นิ้วก้อย (20 เทียบ 18)
+      const fingerTips = [8, 12, 16, 20];
+      const fingerPips = [6, 10, 14, 18];
+      for (let i = 0; i < 4; i++) {
+        if (landmarks[fingerTips[i]].y < landmarks[fingerPips[i]].y) {
+          count++;
+        }
+      }
+      // 2. นิ้วโป้ง (เช็กระยะห่างแนวนอนเทียบกับข้อนิ้วชี้)
+      const thumbTipX = landmarks[4].x;
+      const thumbIpX = landmarks[3].x;
+      const indexMcpX = landmarks[5].x;
+      const wristX = landmarks[0].x;
+      // ตรวจสอบทิศทางฝ่ามือ (ซ้ายหรือขวา)
+      if (indexMcpX < wristX) {
+        if (thumbTipX < thumbIpX - 0.02) count++;
+      } else {
+        if (thumbTipX > thumbIpX + 0.02) count++;
+      }
+      return count;
+    }
+
+    // ประมวลผลภาพจาก MediaPipe Hands
+    function onResults(results) {
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+      let fingerCount = -1;
+
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const landmarks = results.multiHandLandmarks[0];
+        // วาดเส้นโครงกระดูกนิ้วมือสีสดใสให้เด็กเห็นบนจอ
+        drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#38bdf8', lineWidth: 4 });
+        drawLandmarks(canvasCtx, landmarks, { color: '#facc15', lineWidth: 2, radius: 5 });
+
+        fingerCount = countExtendedFingers(landmarks);
+        document.getElementById('detectedFingers').textContent = fingerCount;
+      } else {
+        document.getElementById('detectedFingers').textContent = "-";
+      }
+
+      // ตรรกะจับเวลาการชู 1-4 นิ้วค้างไว้
+      if (!isLocked) {
+        if (fingerCount >= 1 && fingerCount <= 4) {
+          if (fingerCount === currentHeldFinger) {
+            const elapsed = Date.now() - holdStartTime;
+            const percent = Math.min((elapsed / HOLD_DURATION) * 100, 100);
+            updateHoldUI(fingerCount, percent);
+            if (elapsed >= HOLD_DURATION) {
+              submitAnswer(fingerCount);
+            }
+          } else {
+            currentHeldFinger = fingerCount;
+            holdStartTime = Date.now();
+            updateHoldUI(fingerCount, 0);
+          }
+        } else {
+          currentHeldFinger = 0;
+          holdStartTime = 0;
+          updateHoldUI(fingerCount, 0);
+        }
+      }
+
+      canvasCtx.restore();
+    }
+
+    // เริ่มต้นกล้องและ AI MediaPipe
+    async function initCameraAndGame() {
+      renderQuestion();
+      const hands = new Hands({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+      });
+      hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.7,
+        minTrackingConfidence: 0.7
+      });
+      hands.onResults(onResults);
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: cameraSelect.value ? { exact: cameraSelect.value } : undefined, width: 640, height: 480 }
+      });
+      videoElement.srcObject = stream;
+      videoElement.play();
+
+      async function processFrame() {
+        if (!videoElement.paused && !videoElement.ended) {
+          await hands.send({ image: videoElement });
+        }
+        requestAnimationFrame(processFrame);
+      }
+      processFrame();
+    }
+
+    function toggleFullscreen() {
+      const arena = document.getElementById('gameArena');
+      if (!document.fullscreenElement) {
+        arena.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    loadCameras();
+    renderQuestion();
+  </script>
+</body>
+</html>

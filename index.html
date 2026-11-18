@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ศูนย์รวมเกมการศึกษาหน้าชั้นเรียน - โรงเรียนบ้านโนนจั่นห้วยแสงพรสวรรค์</title>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Prompt', sans-serif; }
+    body {
+      background: radial-gradient(circle at top, #1e293b 0%, #090d16 70%);
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+    }
+
+    /* ส่วนหัวของหน้าเว็บ */
+    .header {
+      width: 100%;
+      max-width: 1200px;
+      text-align: center;
+      margin-bottom: 28px;
+      padding: 28px 20px;
+      background: rgba(30, 41, 59, 0.65);
+      border: 1px solid #334155;
+      border-radius: 24px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+    .school-badge {
+      display: inline-block;
+      background: rgba(250, 204, 21, 0.15);
+      border: 1px solid #facc15;
+      color: #fde047;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 4px 16px;
+      border-radius: 999px;
+      margin-bottom: 10px;
+    }
+    .header h1 {
+      font-size: clamp(26px, 4vw, 40px);
+      font-weight: 900;
+      background: linear-gradient(90deg, #38bdf8, #facc15, #fb7185);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .header p {
+      color: #cbd5e1;
+      font-size: 16px;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* แถบค้นหาและตัวกรองหมวดหมู่ */
+    .filter-bar {
+      width: 100%;
+      max-width: 1200px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .category-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { background: #334155; color: #fff; }
+    .tab-btn.active {
+      background: #38bdf8;
+      color: #090d16;
+      border-color: #38bdf8;
+      font-weight: 800;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+    }
+
+    .search-box {
+      position: relative;
+      min-width: 260px;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 9px 16px 9px 38px;
+      border-radius: 999px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+    }
+    .search-box input:focus { border-color: #38bdf8; }
+    .search-box::before {
+      content: "🔍";
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+    }
+
+    /* ตารางการ์ดเกม (Grid) */
+    .games-grid {
+      width: 100%;
+      max-width: 1200px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    .game-card {
+      background: linear-gradient(145deg, #1e293b, #0f172a);
+      border: 2px solid #334155;
+      border-radius: 22px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .game-card:hover {
+      transform: translateY(-6px);
+      border-color: #38bdf8;
+      box-shadow: 0 16px 35px rgba(0,0,0,0.7);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+    .game-icon {
+      font-size: 52px;
+      width: 76px;
+      height: 76px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .badges {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+    .badge-cat {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+    }
+    .badge-sensor {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: rgba(250, 204, 21, 0.15);
+      color: #fde047;
+    }
+
+    .game-title {
+      font-size: 21px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .game-desc {
+      font-size: 14px;
+      color: #94a3b8;
+      line-height: 1.5;
+      margin-bottom: 18px;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 14px;
+      border-top: 1px solid #1e293b;
+    }
+    .grade-tag {
+      font-size: 12px;
+      font-weight: 700;
+      color: #cbd5e1;
+    }
+    .btn-play {
+      background: linear-gradient(90deg, #10b981, #059669);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 15px;
+      padding: 10px 22px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.1s, filter 0.2s;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+    }
+    .btn-play:hover { filter: brightness(1.1); transform: scale(1.03); }
+    .btn-play.coming-soon {
+      background: #334155;
+      color: #94a3b8;
+      box-shadow: none;
+      pointer-events: none;
+    }
+
+    /* กล่องคำแนะนำการเพิ่มเกมสำหรับครู */
+    .admin-note {
+      width: 100%;
+      max-width: 1200px;
+      margin-top: 36px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px dashed #475569;
+      border-radius: 16px;
+      padding: 16px 22px;
+      font-size: 13px;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    code {
+      background: #1e293b;
+      color: #38bdf8;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ส่วนหัว -->
+  <header class="header">
+    <div class="school-badge">🏫 สื่อการสอนเชิงโต้ตอบ (Interactive Classroom Games) — โรงเรียนบ้านโนนจั่นห้วยแสงพรสวรรค์</div>
+    <h1>🎮 ศูนย์รวมเกมการเรียนรู้หน้าชั้นเรียน</h1>
+    <p>เลือกเกมด้านล่างเพื่อเปิดใช้งานแบบเต็มหน้าจอ รองรับการควบคุมด้วยกล้อง AI จับท่าทาง ไมโครโฟน และคีย์บอร์ด</p>
+  </header>
+
+  <!-- แถบค้นหาและตัวกรองหมวดหมู่ -->
+  <div class="filter-bar">
+    <div class="category-tabs" id="categoryTabs">
+      <button class="tab-btn active" data-cat="all">🌟 ทั้งหมด</button>
+      <button class="tab-btn" data-cat="english">🔤 ภาษาอังกฤษ</button>
+      <button class="tab-btn" data-cat="math">🔢 คณิตศาสตร์</button>
+      <button class="tab-btn" data-cat="movement">🕺 เต้น & เคลื่อนไหว</button>
+      <button class="tab-btn" data-cat="music">🎵 ดนตรี & จังหวะ</button>
+    </div>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="ค้นหาชื่อเกม หรือ ระดับชั้น..." oninput="renderGames()">
+    </div>
+  </div>
+
+  <!-- พื้นที่แสดงการ์ดเกมทั้งหมด -->
+  <main class="games-grid" id="gamesGrid"></main>
+
+  <!-- แถบแจ้งวิธีเพิ่มเกมใหม่ในอนาคต -->
+  <footer class="admin-note">
+    <div>💡 <strong>วิธีเพิ่มเกมใหม่ในอนาคต:</strong> นำไฟล์ <code>.html</code> ของเกมใหม่มาวางในโฟลเดอร์เดียวกัน แล้วเพิ่มชื่อไฟล์ในตัวแปร <code>gamesList</code> ท้ายไฟล์ <code>index.html</code> นี้</div>
+    <div>ครูผู้สอน: นายณัฐพล ชั้นกระโทก</div>
+  </footer>
+
+  <script>
+    // =========================================================================
+    // 📌 รายการเกมทั้งหมด (ในอนาคตเพิ่มเกมใหม่ได้ง่ายๆ แค่คัดลอกบล็อก { ... } มาต่อท้าย)
+    // =========================================================================
+    const gamesList = [
+      {
+        title: "Virtual Catch: คว้าสระ A E I O U",
+        desc: "เกมคว้าลูกบอลสระภาษาอังกฤษกลางอากาศด้วยท่ากำมือ เติมคำศัพท์พื้นฐาน 15 ข้อ แข่งจับเวลา พร้อมระบบวนข้อที่ผิดกลับมาแก้ตัว",
+        icon: "✊",
+        category: "english",
+        categoryLabel: "ภาษาอังกฤษ",
+        sensor: "📷 กล้อง AI (จับมือ)",
+        grade: "ชั้น ป.3",
+        file: "vowel-catch-p3.html", // ต้องตรงกับชื่อไฟล์ .html ที่บันทึกไว้
+        ready: true
+      },
+      {
+        title: "ศึกดวลแดนซ์ 1v1 (โครงกระดูก AI)",
+        desc: "เกมแข่งขันเต้นพร้อมกัน 2 คน แบ่งฝั่งซ้าย-ขวา จับโครงกระดูกก้างปลาเรืองแสง 33 จุด วัดความเร็วการขยับข้อต่อ ปรับความไวได้",
+        icon: "🦴",
+        category: "movement",
+        categoryLabel: "เต้น & เคลื่อนไหว",
+        sensor: "📷 กล้อง AI (โครงกระดูก 2 คน)",
+        grade: "ทุกระดับชั้น",
+        file: "dance-battle-2p.html",
+        ready: true
+      },
+      {
+        title: "คณิตคิดเร็ว ชูนิ้วตอบคำถาม",
+        desc: "เกมฝึกบวกลบเลขเร็วหน้าชั้นเรียน ตรวจจับจำนวนนิ้วมือที่ชูขึ้นหน้ากล้องเพื่อตอบคำถามแข่งกับเวลา",
+        icon: "🖐️",
+        category: "math",
+        categoryLabel: "คณิตศาสตร์",
+        sensor: "📷 กล้อง AI (นับนิ้วมือ)",
+        grade: "ชั้น ป.1 - ป.6",
+        file: "math-p3-gesture-quiz.html", // แก้ชื่อไฟล์ให้ตรงกับไฟล์เกมคณิตคิดเร็วของคุณครู
+        ready: true
+      },
+      {
+        title: "เกมเป่าเมโลเดียน & ทายระดับเสียง",
+        desc: "พื้นที่เตรียมไว้สำหรับเกมดนตรีในอนาคต (จับเสียงไมโครโฟนวัดความแม่นยำตัวโน้ต โด เร มี ฟา ซอล)",
+        icon: "🎹",
+        category: "music",
+        categoryLabel: "ดนตรี & จังหวะ",
+        sensor: "🎤 ไมโครโฟน (Web Audio)",
+        grade: "ชั้น ป.3 - ป.6",
+        file: "melodion-pitch-game.html",
+        ready: false // เปลี่ยนเป็น true เมื่อสร้างไฟล์เกมนี้เสร็จแล้ว
+      }
+    ];
+    // =========================================================================
+
+    let activeCategory = "all";
+
+    // ตั้งค่าปุ่มเลือกหมวดหมู่
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeCategory = btn.dataset.cat;
+        renderGames();
+      });
+    });
+
+    // วาดการ์ดเกมทั้งหมดลงหน้าจอ
+    function renderGames() {
+      const grid = document.getElementById('gamesGrid');
+      const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
+      grid.innerHTML = '';
+
+      const filtered = gamesList.filter(g => {
+        const matchCat = activeCategory === 'all' || g.category === activeCategory;
+        const matchText = g.title.toLowerCase().includes(keyword) ||
+                          g.desc.toLowerCase().includes(keyword) ||
+                          g.grade.toLowerCase().includes(keyword);
+        return matchCat && matchText;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:40px; color:#94a3b8; font-size:18px;">ไม่พบเกมที่ค้นหา ลองเลือกหมวดหมู่ "ทั้งหมด" ดูนะครับ</div>`;
+        return;
+      }
+
+      filtered.forEach(game => {
+        const card = document.createElement('div');
+        card.className = 'game-card';
+        card.innerHTML = `
+          <div>
+            <div class="card-top">
+              <div class="game-icon">${game.icon}</div>
+              <div class="badges">
+                <span class="badge-cat">${game.categoryLabel}</span>
+                <span class="badge-sensor">${game.sensor}</span>
+              </div>
+            </div>
+            <h2 class="game-title">${game.title}</h2>
+            <p class="game-desc">${game.desc}</p>
+          </div>
+          <div class="card-footer">
+            <span class="grade-tag">🎯 ${game.grade}</span>
+            ${game.ready
+              ? `<a href="${game.file}" target="_blank" class="btn-play">▶ เข้าเล่นเกม</a>`
+              : `<span class="btn-play coming-soon">⏳ เร็วๆ นี้</span>`
+            }
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    renderGames();
+  </script>
+</body>
+</html>

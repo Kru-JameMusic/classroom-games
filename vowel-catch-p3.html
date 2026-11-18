@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Virtual Catch ป.3: คว้าสระภาษาอังกฤษ (A E I O U) แข่งจับเวลา 15 ข้อ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Prompt', sans-serif; }
+    body {
+      background: #090d16;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px;
+      gap: 10px;
+    }
+
+    /* แถบควบคุมด้านบน */
+    .top-bar {
+      width: 100%;
+      max-width: 1240px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 10px 18px;
+      border-radius: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .title { font-size: 19px; font-weight: 800; color: #facc15; display: flex; align-items: center; gap: 8px; }
+    .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    select, button {
+      padding: 7px 14px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button { border: none; transition: transform 0.1s; }
+    button:active { transform: scale(0.95); }
+    .btn-cam { background: #3b82f6; }
+    .btn-start { background: #10b981; color: #052e16; font-weight: 800; font-size: 14px; }
+    .btn-full { background: #f59e0b; color: #000; font-weight: 700; }
+
+    /* เวทีเกมหลัก (16:9 ขยายเต็มจอได้) */
+    .game-stage {
+      position: relative;
+      width: 100%;
+      max-width: 1240px;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 3px solid #334155;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.85);
+    }
+    .game-stage:fullscreen {
+      max-width: 100vw;
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      border: none;
+    }
+
+    video { display: none; }
+    canvas {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* แถบโจทย์คำศัพท์และเวลาด้านบนในหน้าจอเกม */
+    .hud-header {
+      position: absolute;
+      top: 16px; left: 20px; right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    /* กล่องนับข้อที่ตอบถูก */
+    .stat-pill {
+      background: rgba(15, 23, 42, 0.92);
+      border: 2px solid #38bdf8;
+      padding: 10px 20px;
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+    }
+    .stat-label { font-size: 13px; color: #94a3b8; font-weight: 600; }
+    .stat-val { font-size: 34px; font-weight: 900; color: #38bdf8; line-height: 1.1; }
+
+    /* กล่องโจทย์คำศัพท์ + ภาพคำใบ้ขนาดใหญ่ตรงกลางบน */
+    .word-card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.96), rgba(15, 23, 42, 0.96));
+      border: 4px solid #facc15;
+      padding: 12px 28px;
+      border-radius: 24px;
+      box-shadow: 0 14px 35px rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    /* กล่องภาพคำใบ้ใหญ่พิเศษด้านซ้ายของการ์ด */
+    .clue-visual-box {
+      background: rgba(255, 255, 255, 0.12);
+      border: 2px solid rgba(250, 204, 21, 0.5);
+      border-radius: 18px;
+      padding: 8px 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 145px;
+    }
+    .clue-emoji {
+      font-size: clamp(76px, 6.5vw, 110px);
+      line-height: 1.05;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+    }
+    .clue-thai {
+      font-size: clamp(20px, 1.8vw, 28px);
+      font-weight: 800;
+      color: #fde047;
+      margin-top: 2px;
+    }
+
+    /* ส่วนตัวอักษรคำศัพท์ด้านขวาของการ์ด */
+    .word-text-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .word-instruction {
+      font-size: 14px;
+      color: #94a3b8;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .word-puzzle {
+      font-size: clamp(58px, 5vw, 84px);
+      font-weight: 900;
+      letter-spacing: 6px;
+      color: #ffffff;
+      line-height: 1.05;
+      text-shadow: 0 4px 10px rgba(0,0,0,0.7);
+    }
+    .word-puzzle .blank {
+      color: #f43f5e;
+      text-decoration: underline;
+    }
+    .retry-tag {
+      display: none;
+      background: #f97316;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 3px 12px;
+      border-radius: 999px;
+      margin-top: 6px;
+    }
+
+    /* กล่องจับเวลา (Time Attack) */
+    .timer-pill {
+      background: rgba(15, 23, 42, 0.92);
+      border: 2px solid #10b981;
+      padding: 10px 20px;
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+    }
+    .timer-val { font-size: 34px; font-weight: 900; color: #10b981; line-height: 1.1; font-variant-numeric: tabular-nums; }
+
+    /* แถบแนะนำวิธีเล่นด้านล่าง */
+    .bottom-guide {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid #475569;
+      padding: 6px 20px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #e2e8f0;
+      pointer-events: none;
+      z-index: 15;
+      white-space: nowrap;
+    }
+
+    /* หน้าต่างเฉลยคำศัพท์เมื่อตอบถูก / แจ้งเตือนเมื่อตอบผิด */
+    .feedback-popup {
+      position: absolute;
+      top: 56%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      background: rgba(6, 78, 59, 0.96);
+      border: 4px solid #34d399;
+      padding: 24px 48px;
+      border-radius: 24px;
+      text-align: center;
+      z-index: 25;
+      display: none;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+      animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    .feedback-popup.wrong {
+      background: rgba(127, 29, 29, 0.96);
+      border-color: #f87171;
+    }
+    .fb-emoji { font-size: 72px; line-height: 1.1; }
+    .fb-word { font-size: 64px; font-weight: 900; color: #fff; letter-spacing: 3px; }
+    .fb-meaning { font-size: 26px; font-weight: 700; color: #fde047; margin-top: 4px; }
+
+    /* หน้าจอเริ่มต้น & สรุปเวลาตอนจบ 15 ข้อ */
+    .overlay-screen {
+      position: absolute;
+      inset: 0;
+      background: rgba(9, 13, 22, 0.85);
+      backdrop-filter: blur(5px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      z-index: 35;
+      padding: 24px;
+    }
+    .summary-card {
+      background: #1e293b;
+      border: 4px solid #facc15;
+      padding: 36px 50px;
+      border-radius: 26px;
+      max-width: 580px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+    }
+    .final-time { font-size: 64px; font-weight: 900; color: #10b981; margin: 10px 0; }
+
+    @keyframes popIn { to { transform: translate(-50%, -50%) scale(1); } }
+  </style>
+</head>
+<body>
+
+  <!-- แถบควบคุมด้านบน -->
+  <div class="top-bar">
+    <div class="title">✊🖐️ Virtual Catch ป.3 : คว้าสระ A E I O U (15 ข้อ แข่งเวลา)</div>
+    <div class="controls">
+      <select id="cameraSelect"></select>
+      <button class="btn-cam" id="btnCam" onclick="initCameraAndAI()">📷 เปิดกล้อง & โหลด AI</button>
+      <select id="speedSelect" title="ความเร็วในการลอยของตัวอักษร">
+        <option value="0">ความเร็ว: ลอยอยู่กับที่ (ง่ายที่สุด)</option>
+        <option value="0.35">ความเร็ว: ช้ามาก (Slow-Mo)</option>
+        <option value="0.65" selected>ความเร็ว: ช้า (แนะนำสำหรับ ป.3)</option>
+        <option value="1.1">ความเร็ว: ปานกลาง</option>
+        <option value="1.8">ความเร็ว: เร็ว (ท้าทาย)</option>
+      </select>
+      <button class="btn-start" onclick="startNewGame()">▶ เริ่มจับเวลาเล่น (15 ข้อ)</button>
+      <button class="btn-full" onclick="toggleFullscreen()">⛶ เต็มจอ</button>
+    </div>
+  </div>
+
+  <!-- เวทีเกม -->
+  <div class="game-stage" id="gameStage">
+    <video id="videoInput" playsinline></video>
+    <canvas id="gameCanvas" width="1280" height="720"></canvas>
+
+    <!-- HUD ด้านบน -->
+    <div class="hud-header">
+      <div class="stat-pill">
+        <div class="stat-label">ตอบถูกแล้ว</div>
+        <div class="stat-val"><span id="solvedCount">0</span> / 15</div>
+      </div>
+
+      <!-- การ์ดโจทย์คำศัพท์พร้อมภาพคำใบ้ขนาดใหญ่ -->
+      <div class="word-card">
+        <div class="clue-visual-box">
+          <div class="clue-emoji" id="clueEmoji">🐱</div>
+          <div class="clue-thai" id="clueThai">แมว</div>
+        </div>
+        <div class="word-text-box">
+          <div class="word-instruction">เติมสระให้ตรงกับภาพ</div>
+          <div class="word-puzzle" id="wordPuzzle">C <span class="blank">_</span> T</div>
+          <div class="retry-tag" id="retryTag">🔄 ข้อนี้เคยตอบผิด — วนกลับมาแก้ตัวใหม่!</div>
+        </div>
+      </div>
+
+      <div class="timer-pill">
+        <div class="stat-label">⏱️ เวลาที่ใช้</div>
+        <div class="timer-val" id="timerDisplay">00:00</div>
+      </div>
+    </div>
+
+    <!-- ป๊อปอัปเฉลยคำศัพท์ -->
+    <div class="feedback-popup" id="feedbackPopup">
+      <div class="fb-emoji" id="fbEmoji">🐱</div>
+      <div id="fbIcon" style="font-size: 26px; font-weight: 800; color: #34d399;">🎉 ถูกต้อง!</div>
+      <div class="fb-word" id="fbWord">CAT</div>
+      <div class="fb-meaning" id="fbMeaning">แปลว่า "แมว"</div>
+    </div>
+
+    <div class="bottom-guide">
+      🖐️ แบมือเลื่อนไปที่ลูกบอลสระ (A E I O U) แล้ว <strong>✊ กำมือเพื่อคว้า!</strong>
+    </div>
+
+    <!-- หน้าจอเริ่มต้น / สรุปผล -->
+    <div class="overlay-screen" id="overlayScreen">
+      <div class="summary-card" id="overlayCard">
+        <div style="font-size: 56px;">🎯</div>
+        <h2 style="font-size: 30px; margin: 8px 0;">ภารกิจคว้าสระ A E I O U (ป.3)</h2>
+        <p style="color: #cbd5e1; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+          1. สังเกต <strong>ภาพคำใบ้ขนาดใหญ่</strong> ด้านบนให้ดี<br>
+          2. ขยับมือไปทาบที่ลูกบอลสระที่ถูกต้อง แล้ว <strong>กำมือ (✊)</strong> เพื่อคว้า<br>
+          3. หากคว้าผิด ข้อนั้นจะถูกข้ามไปและวนกลับมาให้ตอบใหม่!
+        </p>
+        <p style="color: #facc15; font-size: 14px;">กดปุ่ม <strong>"📷 เปิดกล้อง & โหลด AI"</strong> ด้านบนก่อนเริ่มเล่น</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // คลังคำศัพท์ ป.3 เรื่องสระ A, E, I, O, U จำนวน 15 ข้อ (แยกภาพคำใบ้ใหญ่ + คำแปลชัดเจน)
+    const masterVocabList = [
+      { puzzle: "C _ T", missing: "A", fullWord: "CAT", emoji: "🐱", thai: "แมว", isRetry: false },
+      { puzzle: "P _ N", missing: "E", fullWord: "PEN", emoji: "🖊️", thai: "ปากกา", isRetry: false },
+      { puzzle: "P _ G", missing: "I", fullWord: "PIG", emoji: "🐷", thai: "หมู", isRetry: false },
+      { puzzle: "D _ G", missing: "O", fullWord: "DOG", emoji: "🐶", thai: "สุนัข", isRetry: false },
+      { puzzle: "S _ N", missing: "U", fullWord: "SUN", emoji: "☀️", thai: "ดวงอาทิตย์", isRetry: false },
+      { puzzle: "B _ G", missing: "A", fullWord: "BAG", emoji: "🎒", thai: "กระเป๋า", isRetry: false },
+      { puzzle: "B _ D", missing: "E", fullWord: "BED", emoji: "🛏️", thai: "เตียงนอน", isRetry: false },
+      { puzzle: "F _ SH", missing: "I", fullWord: "FISH", emoji: "🐟", thai: "ปลา", isRetry: false },
+      { puzzle: "B _ X", missing: "O", fullWord: "BOX", emoji: "📦", thai: "กล่อง", isRetry: false },
+      { puzzle: "C _ P", missing: "U", fullWord: "CUP", emoji: "🥤", thai: "ถ้วยแก้ว", isRetry: false },
+      { puzzle: "H _ T", missing: "A", fullWord: "HAT", emoji: "👒", thai: "หมวก", isRetry: false },
+      { puzzle: "T _ N", missing: "E", fullWord: "TEN", emoji: "🔟", thai: "เลขสิบ", isRetry: false },
+      { puzzle: "M _ LK", missing: "I", fullWord: "MILK", emoji: "🥛", thai: "นม", isRetry: false },
+      { puzzle: "FR _ G", missing: "O", fullWord: "FROG", emoji: "🐸", thai: "กบ", isRetry: false },
+      { puzzle: "D _ CK", missing: "U", fullWord: "DUCK", emoji: "🦆", thai: "เป็ด", isRetry: false }
+    ];
+
+    const VOWELS = ["A", "E", "I", "O", "U"];
+    const BALL_COLORS = {
+      A: "#ef4444",
+      E: "#3b82f6",
+      I: "#10b981",
+      O: "#f59e0b",
+      U: "#a855f7"
+    };
+
+    const video = document.getElementById('videoInput');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const cameraSelect = document.getElementById('cameraSelect');
+
+    let isCameraReady = false;
+    let isPlaying = false;
+    let isPausedForFeedback = false;
+    let lastFrameTime = performance.now();
+
+    let questionQueue = [];
+    let currentQuestion = null;
+    let solvedCount = 0;
+    let wrongAttempts = 0;
+
+    let startTime = 0;
+    let timerInterval = null;
+    let fallingBalls = [];
+
+    let handCursor = { x: -100, y: -100, isClosed: false, detected: false };
+    let wasHandClosed = false;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+
+      if (type === 'correct') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.1);
+        osc.frequency.setValueAtTime(783.99, now + 0.2);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+        osc.start(now); osc.stop(now + 0.45);
+      } else if (type === 'wrong') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.linearRampToValueAtTime(120, now + 0.3);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc.start(now); osc.stop(now + 0.35);
+      } else if (type === 'win') {
+        [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+          const o = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          o.type = 'triangle';
+          o.frequency.setValueAtTime(f, now + i * 0.12);
+          g.gain.setValueAtTime(0.25, now + i * 0.12);
+          g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.4);
+          o.connect(g); g.connect(audioCtx.destination);
+          o.start(now + i * 0.12); o.stop(now + i * 0.12 + 0.4);
+        });
+      }
+    }
+
+    async function loadCameras() {
+      try {
+        const temp = await navigator.mediaDevices.getUserMedia({ video: true });
+        temp.getTracks().forEach(t => t.stop());
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cams = devices.filter(d => d.kind === 'videoinput');
+        cameraSelect.innerHTML = '';
+        cams.forEach((cam, idx) => {
+          const opt = document.createElement('option');
+          opt.value = cam.deviceId;
+          opt.text = cam.label || `Camera ${idx + 1}`;
+          if (opt.text.toLowerCase().includes('iriun')) opt.selected = true;
+          cameraSelect.appendChild(opt);
+        });
+      } catch (e) {
+        console.warn("กรุณารันผ่าน localhost:", e);
+      }
+    }
+
+    async function initCameraAndAI() {
+      const btn = document.getElementById('btnCam');
+      btn.textContent = "⏳ กำลังโหลด AI...";
+      btn.disabled = true;
+
+      try {
+        const hands = new Hands({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+        hands.setOptions({
+          maxNumHands: 1,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.7,
+          minTrackingConfidence: 0.7
+        });
+        hands.onResults(onHandResults);
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: cameraSelect.value ? { exact: cameraSelect.value } : undefined, width: 1280, height: 720 },
+          audio: false
+        });
+        video.srcObject = stream;
+        await video.play();
+
+        isCameraReady = true;
+        btn.textContent = "✅ กล้องพร้อมแล้ว";
+        lastFrameTime = performance.now();
+
+        async function processLoop() {
+          if (!video.paused && !video.ended) {
+            await hands.send({ image: video });
+          }
+          requestAnimationFrame(processLoop);
+        }
+        processLoop();
+      } catch (err) {
+        alert("ไม่สามารถเปิดกล้องได้: " + err.message);
+        btn.textContent = "📷 เปิดกล้อง & โหลด AI";
+        btn.disabled = false;
+      }
+    }
+
+    function onHandResults(results) {
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const lm = results.multiHandLandmarks[0];
+        handCursor.x = (1 - lm[9].x) * canvas.width;
+        handCursor.y = lm[9].y * canvas.height;
+        handCursor.detected = true;
+
+        const tips = [8, 12, 16, 20];
+        const pips = [6, 10, 14, 18];
+        let foldedCount = 0;
+        for (let i = 0; i < 4; i++) {
+          if (lm[tips[i]].y > lm[pips[i]].y) foldedCount++;
+        }
+        handCursor.isClosed = (foldedCount >= 3);
+      } else {
+        handCursor.detected = false;
+        handCursor.isClosed = false;
+      }
+
+      renderGameFrame();
+    }
+
+    function startNewGame() {
+      if (!isCameraReady) {
+        alert("กรุณากดปุ่ม '📷 เปิดกล้อง & โหลด AI' ก่อนเริ่มเกมครับ!");
+        return;
+      }
+      questionQueue = masterVocabList.map(q => ({ ...q, isRetry: false })).sort(() => Math.random() - 0.5);
+      solvedCount = 0;
+      wrongAttempts = 0;
+      document.getElementById('solvedCount').textContent = '0';
+      document.getElementById('overlayScreen').style.display = 'none';
+
+      isPlaying = true;
+      isPausedForFeedback = false;
+
+      clearInterval(timerInterval);
+      startTime = Date.now();
+      timerInterval = setInterval(updateTimerDisplay, 200);
+
+      loadNextQuestion();
+    }
+
+    function updateTimerDisplay() {
+      if (!isPlaying) return;
+      const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+      const mins = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+      const secs = String(elapsedSec % 60).padStart(2, '0');
+      document.getElementById('timerDisplay').textContent = `${mins}:${secs}`;
+    }
+
+    function loadNextQuestion() {
+      if (questionQueue.length === 0) {
+        finishGame();
+        return;
+      }
+
+      isPausedForFeedback = false;
+      document.getElementById('feedbackPopup').style.display = 'none';
+
+      currentQuestion = questionQueue.shift();
+
+      // อัปเดตภาพคำใบ้ขนาดใหญ่ + คำแปล + ตัวอักษรโจทย์
+      document.getElementById('clueEmoji').textContent = currentQuestion.emoji;
+      document.getElementById('clueThai').textContent = currentQuestion.thai;
+      const puzzleHTML = currentQuestion.puzzle.replace('_', '<span class="blank">_</span>');
+      document.getElementById('wordPuzzle').innerHTML = puzzleHTML;
+      document.getElementById('retryTag').style.display = currentQuestion.isRetry ? 'inline-block' : 'none';
+
+      spawnVowelBalls();
+    }
+
+    function spawnVowelBalls() {
+      const shuffledVowels = [...VOWELS].sort(() => Math.random() - 0.5);
+      const baseSpeed = parseFloat(document.getElementById('speedSelect').value);
+      const laneWidth = (canvas.width - 240) / 5;
+
+      // วางตำแหน่งลูกบอลต่ำลงมา (y เริ่มที่ 280-430) เพื่อไม่ให้บังการ์ดภาพคำใบ้ขนาดใหญ่ด้านบน
+      fallingBalls = shuffledVowels.map((letter, idx) => ({
+        letter: letter,
+        x: 150 + idx * laneWidth,
+        y: baseSpeed === 0 ? 410 + (idx % 2 === 0 ? -45 : 45) : 270 + (idx * 25),
+        baseY: 410 + (idx % 2 === 0 ? -45 : 45),
+        phase: idx * 1.2,
+        radius: 62,
+        vy: baseSpeed,
+        vx: baseSpeed === 0 ? 0 : (idx % 2 === 0 ? 0.35 : -0.35),
+        color: BALL_COLORS[letter]
+      }));
+    }
+
+    function checkGrabCollision() {
+      if (!isPlaying || isPausedForFeedback || !handCursor.detected) return;
+
+      if (handCursor.isClosed && !wasHandClosed) {
+        for (let i = 0; i < fallingBalls.length; i++) {
+          const b = fallingBalls[i];
+          const dist = Math.hypot(handCursor.x - b.x, handCursor.y - b.y);
+
+          if (dist <= b.radius + 50) {
+            handleBallCaught(b.letter);
+            break;
+          }
+        }
+      }
+      wasHandClosed = handCursor.isClosed;
+    }
+
+    function handleBallCaught(chosenLetter) {
+      isPausedForFeedback = true;
+      const popup = document.getElementById('feedbackPopup');
+      const fbEmoji = document.getElementById('fbEmoji');
+      const fbIcon = document.getElementById('fbIcon');
+      const fbWord = document.getElementById('fbWord');
+      const fbMeaning = document.getElementById('fbMeaning');
+
+      if (chosenLetter === currentQuestion.missing) {
+        solvedCount++;
+        document.getElementById('solvedCount').textContent = solvedCount;
+        playSound('correct');
+
+        popup.className = 'feedback-popup';
+        fbEmoji.textContent = currentQuestion.emoji;
+        fbIcon.textContent = '🎉 ถูกต้อง!';
+        fbIcon.style.color = '#34d399';
+        fbWord.textContent = currentQuestion.fullWord;
+        fbMeaning.textContent = `แปลว่า "${currentQuestion.thai}"`;
+        popup.style.display = 'block';
+
+        setTimeout(() => {
+          loadNextQuestion();
+        }, 1600);
+      } else {
+        wrongAttempts++;
+        playSound('wrong');
+
+        currentQuestion.isRetry = true;
+        questionQueue.push(currentQuestion);
+
+        popup.className = 'feedback-popup wrong';
+        fbEmoji.textContent = '❌';
+        fbIcon.textContent = `ไม่ใช่ตัว "${chosenLetter}"`;
+        fbIcon.style.color = '#fca5a5';
+        fbWord.textContent = "ข้ามไปข้อถัดไป!";
+        fbMeaning.textContent = "ข้อนี้จะวนกลับมาให้แก้ตัวใหม่ช่วงท้ายครับ";
+        popup.style.display = 'block';
+
+        setTimeout(() => {
+          loadNextQuestion();
+        }, 1600);
+      }
+    }
+
+    function finishGame() {
+      isPlaying = false;
+      clearInterval(timerInterval);
+      playSound('win');
+
+      const finalTimeStr = document.getElementById('timerDisplay').textContent;
+      const overlay = document.getElementById('overlayScreen');
+      const card = document.getElementById('overlayCard');
+
+      card.innerHTML = `
+        <div style="font-size: 64px;">🏆</div>
+        <h2 style="font-size: 32px; margin-top: 6px;">ผ่านครบทั้ง 15 ข้อแล้ว!</h2>
+        <div class="final-time">⏱️ ${finalTimeStr}</div>
+        <p style="font-size: 18px; color: #cbd5e1; margin-bottom: 24px;">
+          จำนวนครั้งที่คว้าพลาด: <strong style="color:#f87171;">${wrongAttempts} ครั้ง</strong>
+        </p>
+        <button class="btn-start" style="font-size: 18px; padding: 12px 32px;" onclick="startNewGame()">🔄 เล่นรอบใหม่ (จับเวลาคนต่อไป)</button>
+      `;
+      overlay.style.display = 'flex';
+    }
+
+    function renderGameFrame() {
+      const now = performance.now();
+      const dt = Math.min((now - lastFrameTime) / 16.67, 3);
+      lastFrameTime = now;
+
+      ctx.save();
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
+
+      ctx.fillStyle = 'rgba(9, 13, 22, 0.25)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const selectedSpeed = parseFloat(document.getElementById('speedSelect').value);
+
+      if (isPlaying && !isPausedForFeedback) {
+        fallingBalls.forEach(b => {
+          if (selectedSpeed === 0) {
+            b.phase += 0.03 * dt;
+            b.y = b.baseY + Math.sin(b.phase) * 18;
+          } else {
+            b.x += b.vx * dt;
+            b.y += selectedSpeed * dt;
+
+            if (b.x - b.radius < 60 || b.x + b.radius > canvas.width - 60) b.vx *= -1;
+            if (b.y - b.radius > canvas.height) {
+              b.y = 260;
+            }
+          }
+        });
+
+        checkGrabCollision();
+      }
+
+      fallingBalls.forEach(b => {
+        const isHovered = handCursor.detected && Math.hypot(handCursor.x - b.x, handCursor.y - b.y) <= b.radius + 50;
+
+        ctx.save();
+        ctx.shadowBlur = isHovered ? 30 : 12;
+        ctx.shadowColor = isHovered ? '#facc15' : b.color;
+
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, isHovered ? b.radius + 10 : b.radius, 0, Math.PI * 2);
+        ctx.fillStyle = b.color;
+        ctx.fill();
+
+        ctx.lineWidth = isHovered ? 7 : 3;
+        ctx.strokeStyle = isHovered ? '#facc15' : '#ffffff';
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 58px Prompt, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(b.letter, b.x, b.y + 4);
+        ctx.restore();
+      });
+
+      if (handCursor.detected) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(handCursor.x, handCursor.y, handCursor.isClosed ? 36 : 50, 0, Math.PI * 2);
+        ctx.fillStyle = handCursor.isClosed ? 'rgba(250, 204, 21, 0.45)' : 'rgba(56, 189, 248, 0.28)';
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = handCursor.isClosed ? '#facc15' : '#38bdf8';
+        ctx.stroke();
+
+        ctx.font = '40px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(handCursor.isClosed ? '✊' : '🖐️', handCursor.x, handCursor.y);
+        ctx.restore();
+      }
+    }
+
+    function toggleFullscreen() {
+      const stage = document.getElementById('gameStage');
+      if (!document.fullscreenElement) {
+        stage.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    loadCameras();
+  </script>
+</body>
+</html>
