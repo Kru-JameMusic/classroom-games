@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ศึกดวลแดนซ์ 2 คน (ปรับความไวได้) - Dance Battle 1v1</title>
+  <title>ศึกดวลแดนซ์ 2 คน (รองรับ YouTube / YouTube Music / MP3) - Dance Battle 1v1</title>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Prompt', sans-serif; }
@@ -21,20 +21,25 @@
     /* แถบควบคุมด้านบน */
     .control-bar {
       width: 100%;
-      max-width: 1240px;
+      max-width: 1280px;
       background: #1e293b;
       border: 1px solid #334155;
       padding: 10px 16px;
       border-radius: 14px;
       display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .control-row {
+      display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
     }
     .title { font-size: 18px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 6px; }
-    .controls-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    select, input[type="number"], button {
+    .controls-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    select, input[type="number"], input[type="text"], button {
       padding: 6px 10px;
       border-radius: 8px;
       border: 1px solid #475569;
@@ -53,18 +58,46 @@
       border: 1px solid #475569;
       font-size: 12px;
     }
-    input[type="range"] { width: 90px; accent-color: #facc15; cursor: pointer; }
-    button { border: none; cursor: pointer; transition: transform 0.1s; }
+    input[type="range"] { width: 85px; accent-color: #facc15; cursor: pointer; }
+    button { border: none; cursor: pointer; transition: transform 0.1s, filter 0.2s; }
     button:active { transform: scale(0.95); }
+    button:hover { filter: brightness(1.1); }
     .btn-cam { background: #3b82f6; }
     .btn-play { background: #10b981; color: #052e16; font-weight: 800; font-size: 14px; padding: 7px 16px; }
     .btn-full { background: #f59e0b; color: #000; font-weight: 700; }
+    .btn-load-audio { background: #8b5cf6; color: #fff; font-weight: 700; }
+    .btn-test-audio { background: #0ea5e9; color: #fff; font-weight: 700; }
+
+    /* แถบตั้งค่าเพลงประกอบ */
+    .music-bar {
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 7px 12px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 13px;
+    }
+    .music-input-group {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      min-width: 280px;
+    }
+    .music-input-group input[type="text"] {
+      flex: 1;
+      min-width: 220px;
+      border-color: #38bdf8;
+    }
 
     /* เวทีแข่งเต้น */
     .stage-container {
       position: relative;
       width: 100%;
-      max-width: 1240px;
+      max-width: 1280px;
       aspect-ratio: 16 / 9;
       background: #000;
       border-radius: 20px;
@@ -89,6 +122,23 @@
       display: block;
     }
 
+    /* หน้าต่างวิดีโอ YouTube ขนาดเล็กตรงกลางล่าง */
+    .yt-mini-dock {
+      display: none;
+      position: absolute;
+      bottom: 76px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 240px;
+      height: 135px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid #facc15;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.85);
+      z-index: 22;
+      background: #000;
+    }
+
     /* เส้นแบ่งครึ่งสนามตรงกลาง */
     .center-divider {
       position: absolute;
@@ -102,7 +152,7 @@
     }
     .vs-badge {
       position: absolute;
-      top: 50%; left: 50%;
+      top: 42%; left: 50%;
       transform: translate(-50%, -50%);
       background: #facc15;
       color: #000;
@@ -160,30 +210,53 @@
     .timer-label { font-size: 11px; color: #facc15; font-weight: 700; letter-spacing: 1px; }
     .timer-val { font-size: 38px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
 
-    /* หลอดพลังความมันส์ด้านล่าง */
-    .energy-bar-wrap {
+    /* หลอดพลังความมันส์และปุ่มควบคุมด้านล่าง */
+    .stage-bottom-hud {
       position: absolute;
-      bottom: 18px;
-      width: 42%;
-      background: rgba(15, 23, 42, 0.85);
+      bottom: 14px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 12px;
+      z-index: 25;
+      pointer-events: none;
+    }
+    .energy-bar-wrap {
+      flex: 1;
+      max-width: 38%;
+      background: rgba(15, 23, 42, 0.88);
       padding: 8px 14px;
       border-radius: 12px;
       border: 1px solid #475569;
-      z-index: 15;
-      pointer-events: none;
     }
-    .energy-bar-wrap.p1 { left: 20px; }
-    .energy-bar-wrap.p2 { right: 20px; }
     .energy-label { font-size: 12px; font-weight: 700; margin-bottom: 4px; display: flex; justify-content: space-between; }
     .energy-track { width: 100%; height: 14px; background: #1e293b; border-radius: 999px; overflow: hidden; }
     .energy-fill.p1 { height: 100%; width: 0%; background: linear-gradient(90deg, #0284c7, #38bdf8, #facc15); transition: width 0.08s; }
     .energy-fill.p2 { height: 100%; width: 0%; background: linear-gradient(90deg, #e11d48, #fb7185, #facc15); transition: width 0.08s; }
 
+    /* แถบปุ่มกดลอยตรงกลางล่าง (ปรากฏทั้งโหมดปกติและเต็มจอ) */
+    .stage-floating-controls {
+      display: flex;
+      gap: 8px;
+      pointer-events: auto;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 6px 10px;
+      border-radius: 14px;
+      border: 1px solid #475569;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.85);
+    }
+    .stage-floating-controls button {
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+
     /* หน้าจอทับตรงกลาง */
     .center-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(9, 13, 22, 0.8);
+      background: rgba(9, 13, 22, 0.82);
       backdrop-filter: blur(4px);
       display: flex;
       flex-direction: column;
@@ -217,38 +290,68 @@
 
   <!-- แถบควบคุม -->
   <div class="control-bar">
-    <div class="title">🦴 ศึกดวลแดนซ์ 1v1</div>
-    <div class="controls-group">
-      <select id="cameraSelect"></select>
-      <button class="btn-cam" id="btnOpenCam" onclick="initPoseAndCamera()">📷 เปิดกล้อง & โหลด AI</button>
+    <div class="control-row">
+      <div class="title">🦴 ศึกดวลแดนซ์ 1v1</div>
+      <div class="controls-group">
+        <select id="cameraSelect"></select>
+        <button type="button" class="btn-cam" id="btnOpenCam" onclick="initPoseAndCamera()">📷 เปิดกล้อง & โหลด AI</button>
 
-      <!-- ตัวปรับความไว (Deadzone) -->
-      <div class="slider-box" title="ปรับลดลงหากคะแนนขึ้นง่ายเกินไป">
-        <span>🎚️ ความไว:</span>
-        <input type="range" id="sensitivitySlider" min="1" max="10" value="4" oninput="updateSensitivityLabel(this.value)">
-        <span id="sensLabel" style="color:#facc15; font-weight:700; min-width:52px;">ปานกลาง</span>
+        <div class="slider-box" title="ปรับลดลงหากคะแนนขึ้นง่ายเกินไป">
+          <span>🎚️ ความไว:</span>
+          <input type="range" id="sensitivitySlider" min="1" max="10" value="4" oninput="updateSensitivityLabel(this.value)">
+          <span id="sensLabel" style="color:#facc15; font-weight:700; min-width:52px;">ปานกลาง</span>
+        </div>
+
+        <select id="scoreRateSelect" title="เลือกความเร็วในการขึ้นของคะแนน">
+          <option value="0.05">คะแนนขึ้นช้า (หลักร้อย)</option>
+          <option value="0.12" selected>คะแนนพอดี (แนะนำ)</option>
+          <option value="0.28">คะแนนขึ้นไว (หลักพัน)</option>
+        </select>
+
+        <label style="font-size:12px; color:#cbd5e1;">เวลา (วิ):</label>
+        <input type="number" id="gameDurationInput" value="30" min="10" max="300" style="width: 58px;">
+
+        <label style="font-size:12px; color:#cbd5e1; display:flex; align-items:center; gap:4px;">
+          <input type="checkbox" id="skeletonToggle" checked> โครงกระดูก
+        </label>
+
+        <button type="button" class="btn-play" onclick="startCountdown()">🔥 เริ่มแข่ง!</button>
+        <button type="button" class="btn-full" onclick="toggleFullscreen()">⛶ เต็มจอ</button>
       </div>
+    </div>
 
-      <!-- ตัวปรับความเร็วในการบวกคะแนน -->
-      <select id="scoreRateSelect" title="เลือกความเร็วในการขึ้นของคะแนน">
-        <option value="0.05">คะแนนขึ้นช้า (หลักร้อย)</option>
-        <option value="0.12" selected>คะแนนพอดี (แนะนำ)</option>
-        <option value="0.28">คะแนนขึ้นไว (หลักพัน)</option>
+    <!-- แถบเลือกแหล่งเพลงประกอบ -->
+    <div class="music-bar">
+      <span style="font-weight:700; color:#facc15;">🎵 เพลงประกอบ:</span>
+      <select id="musicSourceSelect" onchange="handleMusicSourceChange()">
+        <option value="synth" selected>🎹 เสียงบีทแดนซ์ในตัว (ไม่ต้องใช้เน็ต)</option>
+        <option value="youtube">▶️ YouTube / YouTube Music</option>
+        <option value="url">🌐 ลิงก์ไฟล์เสียงตรง (.mp3 / .wav)</option>
+        <option value="file">📂 เลือกไฟล์เพลงจากในเครื่อง (.mp3)</option>
+        <option value="mute">🔇 ปิดเสียงเพลง</option>
       </select>
 
-      <label style="font-size:12px; color:#cbd5e1;">เวลา:</label>
-      <input type="number" id="gameDurationInput" value="30" min="10" max="120" style="width: 56px;">
+      <!-- ช่องวางลิงก์ YouTube / YouTube Music -->
+      <div class="music-input-group" id="ytInputGroup">
+        <input type="text" id="ytUrlInput" placeholder="วางลิงก์ YouTube หรือ music.youtube.com/watch?v=...">
+        <button type="button" class="btn-load-audio" onclick="loadYouTubeAudio()">โหลดเพลง</button>
+        <button type="button" class="btn-test-audio" onclick="toggleTestMusic()">▶️ ทดสอบเสียง</button>
+      </div>
 
-      <label style="font-size:12px; color:#cbd5e1; display:flex; align-items:center; gap:4px;">
-        <input type="checkbox" id="skeletonToggle" checked> โครงกระดูก
-      </label>
+      <!-- ช่องวางลิงก์ไฟล์เสียงตรง -->
+      <div class="music-input-group" id="urlInputGroup">
+        <input type="text" id="audioUrlInput" placeholder="วางลิงก์ไฟล์เสียงตรง เช่น https://.../song.mp3">
+        <button type="button" class="btn-load-audio" onclick="loadDirectAudioUrl()">โหลดเสียง</button>
+        <button type="button" class="btn-test-audio" onclick="toggleTestMusic()">▶️ ทดสอบเสียง</button>
+      </div>
 
-      <label style="font-size:12px; color:#cbd5e1; display:flex; align-items:center; gap:4px;">
-        <input type="checkbox" id="musicToggle" checked> 🎵 เพลง
-      </label>
+      <!-- ช่องอัปโหลดไฟล์เสียงจากเครื่อง -->
+      <div class="music-input-group" id="fileInputGroup">
+        <input type="file" id="localAudioFile" accept="audio/*" onchange="loadLocalAudioFile(event)">
+        <button type="button" class="btn-test-audio" onclick="toggleTestMusic()">▶️ ทดสอบเสียง</button>
+      </div>
 
-      <button class="btn-play" onclick="startCountdown()">🔥 เริ่มแข่ง!</button>
-      <button class="btn-full" onclick="toggleFullscreen()">⛶ เต็มจอ</button>
+      <span id="musicStatusText" style="font-size:12px; color:#34d399; font-weight:600;">พร้อมเล่นเสียงบีทในตัว</span>
     </div>
   </div>
 
@@ -256,6 +359,11 @@
   <div class="stage-container" id="stageContainer">
     <video id="videoInput" playsinline></video>
     <canvas id="gameCanvas" width="1280" height="720"></canvas>
+
+    <!-- หน้าต่างเล่นเพลง YouTube / YouTube Music -->
+    <div class="yt-mini-dock" id="ytMiniDock">
+      <div id="ytPlayerContainer"></div>
+    </div>
 
     <div class="center-divider"></div>
     <div class="vs-badge">VS</div>
@@ -280,25 +388,44 @@
       </div>
     </div>
 
-    <!-- หลอดวัดความมันส์ -->
-    <div class="energy-bar-wrap p1">
-      <div class="energy-label"><span>⚡ ความเร็วการขยับข้อต่อ (ซ้าย)</span><span id="intensityP1">0%</span></div>
-      <div class="energy-track"><div class="energy-fill p1" id="barP1"></div></div>
-    </div>
+    <!-- แถบหลอดความมันส์ + ปุ่มเริ่มแข่ง/เต็มจอ ลอยด้านล่างในจอเกม -->
+    <div class="stage-bottom-hud">
+      <div class="energy-bar-wrap p1">
+        <div class="energy-label"><span>⚡ ความเร็วการขยับข้อต่อ (ซ้าย)</span><span id="intensityP1">0%</span></div>
+        <div class="energy-track"><div class="energy-fill p1" id="barP1"></div></div>
+      </div>
 
-    <div class="energy-bar-wrap p2">
-      <div class="energy-label"><span>⚡ ความเร็วการขยับข้อต่อ (ขวา)</span><span id="intensityP2">0%</span></div>
-      <div class="energy-track"><div class="energy-fill p2" id="barP2"></div></div>
+      <div class="stage-floating-controls">
+        <button type="button" class="btn-play" onclick="startCountdown()">🔥 เริ่มแข่ง!</button>
+        <button type="button" class="btn-full" onclick="toggleFullscreen()">⛶ เต็มจอ</button>
+      </div>
+
+      <div class="energy-bar-wrap p2">
+        <div class="energy-label"><span>⚡ ความเร็วการขยับข้อต่อ (ขวา)</span><span id="intensityP2">0%</span></div>
+        <div class="energy-track"><div class="energy-fill p2" id="barP2"></div></div>
+      </div>
     </div>
 
     <!-- หน้าจอทับตรงกลาง -->
     <div class="center-overlay" id="centerOverlay">
       <div id="overlayContent">
-        <h2 style="font-size: 34px; margin-bottom: 10px;">ยืนให้เห็นโครงกระดูกเต็มตัว ฝั่งซ้าย และ ฝั่งขวา!</h2>
-        <p style="font-size: 17px; color: #cbd5e1;">กดปุ่ม <strong>"📷 เปิดกล้อง & โหลด AI"</strong> ด้านบนเพื่อเริ่มต้น</p>
+        <h2 style="font-size: 32px; margin-bottom: 10px;">ยืนให้เห็นโครงกระดูกเต็มตัว ฝั่งซ้าย และ ฝั่งขวา!</h2>
+        <p style="font-size: 16px; color: #cbd5e1; margin-bottom: 20px;">
+          กดปุ่ม <strong>"📷 เปิดกล้อง & โหลด AI"</strong> ด้านบน จากนั้นกด <strong>"🔥 เริ่มแข่ง!"</strong> ได้ทันที
+        </p>
+        <button type="button" class="btn-play" style="font-size: 18px; padding: 12px 30px;" onclick="startCountdown()">🔥 เริ่มแข่ง!</button>
       </div>
     </div>
   </div>
+
+  <!-- โหลด YouTube IFrame API แบบรองรับ Callback ล่วงหน้า -->
+  <script>
+    window.ytApiLoaded = false;
+    window.onYouTubeIframeAPIReady = function() {
+      window.ytApiLoaded = true;
+    };
+  </script>
+  <script src="https://www.youtube.com/iframe_api"></script>
 
   <script type="module">
     import { PoseLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
@@ -312,7 +439,7 @@
     let isCameraRunning = false;
     let isGamePlaying = false;
     let lastVideoTime = -1;
-    let lastScoreCalcTime = 0; // ตัวควบคุมจังหวะการคำนวณคะแนน (ไม่ให้รัวตาม Hz จอ)
+    let lastScoreCalcTime = 0;
 
     let score1 = 0;
     let score2 = 0;
@@ -323,6 +450,15 @@
     let prevJointsP1 = null;
     let prevJointsP2 = null;
     let particles = [];
+
+    // ตัวแปรจัดการเพลงประกอบ
+    let ytPlayer = null;
+    let isYtReady = false;
+    let pendingYtId = null;
+    let isTestingAudio = false;
+    let customAudioEl = new Audio();
+    customAudioEl.crossOrigin = "anonymous";
+    customAudioEl.loop = true;
 
     const POSE_CONNECTIONS = [
       [11, 12], [11, 13], [13, 15], [12, 14], [14, 16],
@@ -341,9 +477,198 @@
       else label.textContent = "ไวสุดๆ";
     };
 
+    // =========================================================================
+    // ระบบจัดการเพลงประกอบ (YouTube / YouTube Music / Direct MP3 / Local File)
+    // =========================================================================
+    window.handleMusicSourceChange = function() {
+      const src = document.getElementById('musicSourceSelect').value;
+      document.getElementById('ytInputGroup').style.display = (src === 'youtube') ? 'flex' : 'none';
+      document.getElementById('urlInputGroup').style.display = (src === 'url') ? 'flex' : 'none';
+      document.getElementById('fileInputGroup').style.display = (src === 'file') ? 'flex' : 'none';
+      document.getElementById('ytMiniDock').style.display = (src === 'youtube') ? 'block' : 'none';
+
+      stopAllMusic();
+      const status = document.getElementById('musicStatusText');
+      status.style.color = '#34d399';
+
+      if (src === 'synth') {
+        status.textContent = "พร้อมเล่นเสียงบีทในตัว";
+      } else if (src === 'mute') {
+        status.textContent = "ปิดเสียงเพลง";
+      } else if (src === 'youtube') {
+        if (window.location.protocol === 'file:') {
+          status.style.color = '#f87171';
+          status.textContent = "⚠️ เปิดผ่าน file:// จะเล่น YouTube ไม่ได้ (ต้องรันผ่าน localhost หรือ GitHub Pages)";
+        } else {
+          status.textContent = "วางลิงก์ YouTube หรือ YouTube Music แล้วกด 'โหลดเพลง'";
+        }
+      } else if (src === 'url') {
+        status.textContent = "วางลิงก์ไฟล์เสียง .mp3 แล้วกด 'โหลดเสียง'";
+      } else if (src === 'file') {
+        status.textContent = "เลือกไฟล์เพลงจากเครื่องคอมพิวเตอร์";
+      }
+    };
+
+    // รองรับทั้ง youtube.com, music.youtube.com, youtu.be, youtube.com/shorts
+    function extractYouTubeId(url) {
+      try {
+        const u = new URL(url);
+        if (u.hostname.includes('youtu.be')) {
+          return u.pathname.replace('/', '').split('/')[0];
+        }
+        if (u.searchParams.has('v')) {
+          return u.searchParams.get('v');
+        }
+        const matchPath = u.pathname.match(/\/(?:embed|shorts|v)\/([a-zA-Z0-9_-]{11})/);
+        if (matchPath) return matchPath[1];
+      } catch (e) {}
+      const fallback = url.match(/(?:v=|\/)([a-zA-Z0-9_-]{11})(?:[&?\/]|$)/);
+      return fallback ? fallback[1] : null;
+    }
+
+    window.loadYouTubeAudio = function() {
+      const status = document.getElementById('musicStatusText');
+      if (window.location.protocol === 'file:') {
+        alert("ข้อจำกัดของ YouTube: ไม่สามารถเล่นวิดีโอเมื่อเปิดไฟล์แบบ file:// โดยตรงได้ครับ\nกรุณาอัปโหลดขึ้น GitHub Pages หรือเปิดผ่าน http://localhost (หรือใช้ตัวเลือก 'เลือกไฟล์เพลงจากในเครื่อง .mp3' แทนครับ)");
+        return;
+      }
+
+      const url = document.getElementById('ytUrlInput').value.trim();
+      const videoId = extractYouTubeId(url);
+      if (!videoId) {
+        alert("ไม่พบรหัสวิดีโอ กรุณาวางลิงก์จาก YouTube หรือ YouTube Music ให้ครบถ้วนครับ");
+        return;
+      }
+
+      document.getElementById('ytMiniDock').style.display = 'block';
+      status.style.color = '#facc15';
+      status.textContent = "⏳ กำลังโหลดเครื่องเล่น YouTube...";
+
+      if (ytPlayer && isYtReady) {
+        ytPlayer.cueVideoById(videoId);
+        status.style.color = '#34d399';
+        status.textContent = `✅ โหลดเพลงสำเร็จ (ID: ${videoId}) กด '▶️ ทดสอบเสียง' ได้เลย`;
+      } else if (window.YT && window.YT.Player) {
+        createYtPlayerInstance(videoId);
+      } else {
+        pendingYtId = videoId;
+        const waitYt = setInterval(() => {
+          if (window.YT && window.YT.Player) {
+            clearInterval(waitYt);
+            createYtPlayerInstance(pendingYtId);
+          }
+        }, 300);
+      }
+    };
+
+    function createYtPlayerInstance(videoId) {
+      const status = document.getElementById('musicStatusText');
+      ytPlayer = new YT.Player('ytPlayerContainer', {
+        height: '135',
+        width: '240',
+        videoId: videoId,
+        playerVars: {
+          playsinline: 1,
+          rel: 0,
+          origin: window.location.origin
+        },
+        events: {
+          onReady: () => {
+            isYtReady = true;
+            status.style.color = '#34d399';
+            status.textContent = `✅ โหลดเพลงสำเร็จ! กด '▶️ ทดสอบเสียง' หรือ '🔥 เริ่มแข่ง!'`;
+          },
+          onError: (e) => {
+            status.style.color = '#f87171';
+            if (e.data === 101 || e.data === 150 || e.data === 153) {
+              status.textContent = `⚠️ Error ${e.data}: คลิปนี้ติดลิขสิทธิ์/ห้ามฝังเล่นนอกเว็บ YouTube กรุณาลองคลิปอื่น`;
+            } else {
+              status.textContent = `⚠️ YouTube Error รหัส: ${e.data}`;
+            }
+          }
+        }
+      });
+    }
+
+    window.loadDirectAudioUrl = function() {
+      const url = document.getElementById('audioUrlInput').value.trim();
+      if (!url) return;
+      customAudioEl.src = url;
+      customAudioEl.load();
+      const status = document.getElementById('musicStatusText');
+      status.style.color = '#34d399';
+      status.textContent = "✅ โหลดลิงก์เสียงเรียบร้อย! กด '▶️ ทดสอบเสียง' เพื่อเช็ก";
+    };
+
+    window.loadLocalAudioFile = function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const objUrl = URL.createObjectURL(file);
+      customAudioEl.src = objUrl;
+      customAudioEl.load();
+      const status = document.getElementById('musicStatusText');
+      status.style.color = '#34d399';
+      status.textContent = `✅ โหลดเพลง: ${file.name}`;
+    };
+
+    window.toggleTestMusic = function() {
+      if (isTestingAudio) {
+        stopAllMusic();
+        isTestingAudio = false;
+      } else {
+        isTestingAudio = true;
+        playCurrentSource();
+      }
+    };
+
+    function playCurrentSource() {
+      const src = document.getElementById('musicSourceSelect').value;
+      const status = document.getElementById('musicStatusText');
+
+      if (src === 'synth') {
+        let beatStep = 0;
+        musicInterval = setInterval(() => {
+          if (isGamePlaying || isTestingAudio) {
+            playBeatNote(beatStep);
+            beatStep++;
+          }
+        }, 280);
+      } else if (src === 'youtube') {
+        if (ytPlayer && isYtReady) {
+          ytPlayer.seekTo(0);
+          ytPlayer.playVideo();
+        } else {
+          alert("กรุณาวางลิงก์และกดปุ่ม 'โหลดเพลง' ก่อนครับ");
+          isTestingAudio = false;
+        }
+      } else if (src === 'url' || src === 'file') {
+        if (customAudioEl.src) {
+          customAudioEl.currentTime = 0;
+          customAudioEl.play().catch(err => {
+            status.style.color = '#f87171';
+            status.textContent = "⚠️ ลิงก์เสียงถูกบล็อก (CORS) แนะนำใช้ไฟล์เพลงจากในเครื่องครับ";
+            isTestingAudio = false;
+          });
+        } else {
+          alert("กรุณาเลือกไฟล์เพลงหรือวางลิงก์เสียงก่อนครับ");
+          isTestingAudio = false;
+        }
+      }
+    }
+
+    function stopAllMusic() {
+      clearInterval(musicInterval);
+      isTestingAudio = false;
+      if (ytPlayer && isYtReady && typeof ytPlayer.pauseVideo === 'function') {
+        ytPlayer.pauseVideo();
+      }
+      if (!customAudioEl.paused) {
+        customAudioEl.pause();
+      }
+    }
+
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playBeatNote(step) {
-      if (!document.getElementById('musicToggle').checked) return;
       if (audioCtx.state === 'suspended') audioCtx.resume();
       const now = audioCtx.currentTime;
 
@@ -399,9 +724,7 @@
           if (opt.text.toLowerCase().includes('iriun')) opt.selected = true;
           cameraSelect.appendChild(opt);
         });
-      } catch (e) {
-        console.warn("กรุณารันผ่าน localhost เพื่อใช้งานกล้อง:", e);
-      }
+      } catch (e) {}
     }
 
     window.initPoseAndCamera = async function() {
@@ -426,7 +749,7 @@
         });
 
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: cameraSelect.value ? { exact: cameraSelect.value } : undefined, width: 1280, height: 720 },
+          video: { deviceId: cameraSelect.value ? { ideal: cameraSelect.value } : undefined, width: 1280, height: 720 },
           audio: false
         });
         video.srcObject = stream;
@@ -445,7 +768,6 @@
     function predictWebcam() {
       if (!isCameraRunning) return;
 
-      // วาดภาพกล้องแบบ Mirror
       ctx.save();
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
@@ -458,7 +780,6 @@
         lastVideoTime = video.currentTime;
         const results = poseLandmarker.detectForVideo(video, now);
 
-        // คำนวณคะแนนทุกๆ 100 มิลลิวินาที (10 ครั้ง/วินาที) เพื่อไม่ให้คะแนนไหลไวเกินไปตาม Hz จอ
         const shouldCalcScore = (now - lastScoreCalcTime) >= 100;
         if (shouldCalcScore) lastScoreCalcTime = now;
 
@@ -478,7 +799,6 @@
             }
 
             if (shouldCalcScore) {
-              // จับเฉพาะข้อต่อหลัก: ไหล่ (11,12), ศอก (13,14), ข้อมือ (15,16), เข่า (25,26)
               const keyIndices = [11, 12, 13, 14, 15, 16, 25, 26];
               const currentJoints = keyIndices.map(idx => ({
                 x: 1 - landmarks[idx].x,
@@ -566,7 +886,6 @@
       ctx.restore();
     }
 
-    // คำนวณความเร็วการขยับโดยอิงจากแถบความไว (Sensitivity Slider)
     function calcMovementIntensity(prev, curr) {
       if (!prev || !curr) return 0;
       let totalDist = 0;
@@ -576,9 +895,8 @@
         totalDist += Math.hypot(dx, dy);
       }
 
-      // แปลงค่าสไลเดอร์ 1-10 ให้เป็นค่า Deadzone (ยิ่งเลขน้อย ยิ่งต้องขยับแรงถึงจะผ่าน Deadzone)
-      const sensVal = parseInt(document.getElementById('sensitivitySlider').value); // 1 ถึง 10
-      const deadzone = 0.28 - (sensVal * 0.022); // sens=1 -> deadzone 0.258 (ยาก) | sens=10 -> deadzone 0.06 (ง่าย)
+      const sensVal = parseInt(document.getElementById('sensitivitySlider').value);
+      const deadzone = 0.28 - (sensVal * 0.022);
       const maxRange = 0.85;
 
       if (totalDist < deadzone) return 0;
@@ -665,7 +983,7 @@
         return;
       }
       clearInterval(gameTimerInterval);
-      clearInterval(musicInterval);
+      stopAllMusic();
       isGamePlaying = false;
       score1 = 0;
       score2 = 0;
@@ -698,13 +1016,7 @@
       timeLeft = parseInt(document.getElementById('gameDurationInput').value) || 30;
       document.getElementById('timerDisplay').textContent = timeLeft;
 
-      let beatStep = 0;
-      musicInterval = setInterval(() => {
-        if (isGamePlaying) {
-          playBeatNote(beatStep);
-          beatStep++;
-        }
-      }, 280);
+      playCurrentSource();
 
       gameTimerInterval = setInterval(() => {
         timeLeft--;
@@ -718,7 +1030,7 @@
     function endMatch() {
       isGamePlaying = false;
       clearInterval(gameTimerInterval);
-      clearInterval(musicInterval);
+      stopAllMusic();
       playFanfare();
 
       const overlay = document.getElementById('centerOverlay');
@@ -737,7 +1049,7 @@
             <span style="color:#38bdf8;">🔵 ฝั่งซ้าย: ${score1.toLocaleString()} แต้ม</span>
             <span style="color:#fb7185;">🔴 ฝั่งขวา: ${score2.toLocaleString()} แต้ม</span>
           </div>
-          <button class="btn-play" style="font-size:18px; padding:12px 30px;" onclick="startCountdown()">🔄 แข่งคู่ต่อไป!</button>
+          <button type="button" class="btn-play" style="font-size:18px; padding:12px 30px;" onclick="startCountdown()">🔄 แข่งคู่ต่อไป!</button>
         </div>
       `;
     }
