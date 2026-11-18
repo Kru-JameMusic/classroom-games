@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>เกมคณิตคิดเร็ว ป.3 (การคูณ) - จับท่ามือผ่านกล้อง</title>
+  <title>เกมตอบคำถามชูนิ้ว (ตั้งโจทย์ & จับเวลาได้) - จับท่ามือผ่านกล้อง</title>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <!-- โหลดไลบรารี MediaPipe Hands สำหรับตรวจจับนิ้วมือ -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
@@ -25,10 +24,10 @@
     /* แถบควบคุมด้านบน */
     .top-controls {
       width: 100%;
-      max-width: 1200px;
+      max-width: 1240px;
       background: rgba(30, 41, 59, 0.85);
       border: 1px solid #334155;
-      padding: 10px 20px;
+      padding: 10px 18px;
       border-radius: 14px;
       display: flex;
       justify-content: space-between;
@@ -38,7 +37,7 @@
       gap: 10px;
     }
     .game-title {
-      font-size: 20px;
+      font-size: 19px;
       font-weight: 800;
       color: #38bdf8;
       display: flex;
@@ -48,33 +47,59 @@
     .cam-group {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      flex-wrap: wrap;
     }
-    select, button {
-      padding: 8px 14px;
+    select, input[type="number"], button {
+      padding: 8px 12px;
       border-radius: 8px;
       border: none;
       font-size: 14px;
       font-weight: 600;
-      cursor: pointer;
     }
-    select { background: #0f172a; color: #fff; border: 1px solid #475569; }
-    .btn-start { background: #10b981; color: #052e16; }
+    button { cursor: pointer; transition: transform 0.1s, filter 0.2s; }
+    button:active { transform: scale(0.96); }
+    select, input[type="number"] {
+      background: #0f172a;
+      color: #fff;
+      border: 1px solid #475569;
+    }
+    select { max-width: 190px; }
+    .time-setting-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #0f172a;
+      border: 1px solid #475569;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #cbd5e1;
+    }
+    .time-setting-box input[type="number"] {
+      width: 64px;
+      padding: 4px 6px;
+      text-align: center;
+      color: #facc15;
+      font-weight: 800;
+    }
+    .btn-edit { background: #f59e0b; color: #000; font-weight: 700; }
+    .btn-edit:hover { filter: brightness(1.1); }
+    .btn-cam { background: #0ea5e9; color: #fff; font-weight: 700; }
+    .btn-start { background: #10b981; color: #052e16; font-weight: 800; padding: 8px 18px; }
     .btn-start:hover { background: #34d399; }
-    .btn-fullscreen { background: #3b82f6; color: #fff; }
+    .btn-fullscreen { background: #6366f1; color: #fff; }
 
-    /* พื้นที่หลักของเกม (แบ่งซ้ายกล้อง - ขวาโจทย์คำถาม) */
+    /* พื้นที่หลักของเกม */
     .game-arena {
       width: 100%;
-      max-width: 1200px;
+      max-width: 1240px;
       flex: 1;
       display: grid;
       grid-template-columns: 1.1fr 1fr;
       gap: 20px;
       align-items: stretch;
     }
-
-    /* โหมดเต็มจอ */
     .game-arena:fullscreen {
       max-width: 100vw;
       height: 100vh;
@@ -100,14 +125,12 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transform: scaleX(-1); /* กลับด้านซ้าย-ขวาให้เหมือนกระจก เด็กจะได้ไม่งง */
+      transform: scaleX(-1);
     }
 
-    /* ป้ายแสดงจำนวนนิ้วที่ตรวจจับได้ */
     .finger-hud {
       position: absolute;
-      top: 16px;
-      left: 16px;
+      top: 16px; left: 16px;
       background: rgba(15, 23, 42, 0.85);
       backdrop-filter: blur(6px);
       border: 2px solid #38bdf8;
@@ -118,49 +141,25 @@
       gap: 12px;
       z-index: 10;
     }
-    .finger-count-num {
-      font-size: 36px;
-      font-weight: 800;
-      color: #facc15;
-      line-height: 1;
-    }
+    .finger-count-num { font-size: 36px; font-weight: 800; color: #facc15; line-height: 1; }
     .finger-label { font-size: 14px; color: #e2e8f0; }
 
-    /* แถบโหลดยืนยันคำตอบ (Hold to Confirm) */
     .hold-progress-wrapper {
       position: absolute;
-      bottom: 20px;
-      left: 20px;
-      right: 20px;
+      bottom: 20px; left: 20px; right: 20px;
       background: rgba(15, 23, 42, 0.9);
       padding: 12px 16px;
       border-radius: 14px;
       border: 1px solid #475569;
       z-index: 10;
     }
-    .hold-text {
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 6px;
-      display: flex;
-      justify-content: space-between;
-    }
-    .progress-bar-bg {
-      width: 100%;
-      height: 14px;
-      background: #334155;
-      border-radius: 999px;
-      overflow: hidden;
-    }
-    .progress-bar-fill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #facc15, #10b981);
-      transition: width 0.08s linear;
-    }
+    .hold-text { font-size: 15px; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; }
+    .progress-bar-bg { width: 100%; height: 14px; background: #334155; border-radius: 999px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #facc15, #10b981); transition: width 0.08s linear; }
 
-    /* กล่องโจทย์คณิตศาสตร์ขวามือ */
+    /* กล่องโจทย์ขวามือ */
     .quiz-card {
+      position: relative;
       background: rgba(30, 41, 59, 0.9);
       border: 2px solid #475569;
       border-radius: 20px;
@@ -169,54 +168,68 @@
       flex-direction: column;
       justify-content: space-between;
       box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+      overflow: hidden;
     }
-
     .quiz-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid #334155;
       padding-bottom: 12px;
+      gap: 8px;
+      flex-wrap: wrap;
     }
-    .q-badge {
-      background: #6366f1;
-      padding: 6px 14px;
+    .q-badge { background: #6366f1; padding: 6px 14px; border-radius: 999px; font-size: 15px; font-weight: 700; }
+    .timer-badge {
+      background: #0f172a;
+      border: 2px solid #10b981;
+      color: #10b981;
+      padding: 5px 16px;
       border-radius: 999px;
-      font-size: 16px;
-      font-weight: 700;
-    }
-    .score-badge {
-      background: #f59e0b;
-      color: #000;
-      padding: 6px 16px;
-      border-radius: 999px;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+    .timer-badge.warning {
+      border-color: #ef4444;
+      color: #ef4444;
+      animation: pulseWarn 0.8s infinite;
+    }
+    .score-badge { background: #f59e0b; color: #000; padding: 6px 14px; border-radius: 999px; font-size: 16px; font-weight: 800; }
+
+    /* หน้าจอทับกล่องโจทย์ตอนยังไม่กดเริ่มเกม */
+    .standby-cover {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(4px);
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
     }
 
-    /* ตัวเลขโจทย์การคูณใหญ่ๆ */
     .question-box {
       text-align: center;
-      padding: 24px 10px;
+      padding: 24px 12px;
       background: #0f172a;
       border-radius: 16px;
       border: 2px dashed #38bdf8;
       margin: 16px 0;
     }
-    .question-hint { font-size: 14px; color: #94a3b8; margin-bottom: 4px; }
+    .question-hint { font-size: 15px; color: #94a3b8; margin-bottom: 6px; }
     .question-math {
-      font-size: 56px;
+      font-size: clamp(36px, 4vw, 54px);
       font-weight: 800;
       color: #ffffff;
-      letter-spacing: 2px;
+      letter-spacing: 1px;
+      word-break: break-word;
     }
 
-    /* ตัวเลือก 4 ข้อ (ชู 1-4 นิ้ว) */
-    .options-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
+    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .option-item {
       background: #1e293b;
       border: 3px solid #475569;
@@ -227,46 +240,137 @@
       gap: 12px;
       transition: all 0.2s;
     }
-    .option-item.active {
-      border-color: #facc15;
-      background: rgba(250, 204, 21, 0.15);
-      transform: scale(1.03);
-    }
-    .option-item.correct {
-      border-color: #10b981;
-      background: #065f46;
-      transform: scale(1.05);
-    }
-    .option-item.wrong {
-      border-color: #ef4444;
-      background: #7f1d1d;
-    }
+    .option-item.active { border-color: #facc15; background: rgba(250, 204, 21, 0.15); transform: scale(1.03); }
+    .option-item.correct { border-color: #10b981; background: #065f46; transform: scale(1.05); }
+    .option-item.wrong { border-color: #ef4444; background: #7f1d1d; }
     .finger-icon {
-      width: 44px;
-      height: 44px;
+      width: 44px; height: 44px;
       background: #334155;
       border-radius: 12px;
-      display: flex;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 800; color: #38bdf8; flex-shrink: 0;
+    }
+    .option-val { font-size: clamp(22px, 2.5vw, 32px); font-weight: 800; color: #fff; word-break: break-word; }
+
+    /* หน้าต่างตั้งค่า / แก้ไขคำถาม */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 13, 22, 0.92);
+      backdrop-filter: blur(6px);
+      z-index: 9999;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
-      font-weight: 800;
-      color: #38bdf8;
-      flex-shrink: 0;
+      padding: 20px;
     }
-    .option-val {
-      font-size: 32px;
-      font-weight: 800;
-      color: #fff;
+    .editor-modal {
+      background: #1e293b;
+      border: 2px solid #38bdf8;
+      border-radius: 22px;
+      width: 100%;
+      max-width: 960px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.85);
     }
+    .modal-header {
+      padding: 16px 24px;
+      background: #0f172a;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .modal-header h2 { font-size: 19px; color: #38bdf8; }
+    .io-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-export { background: #6366f1; color: #fff; }
+    .btn-import { background: #0ea5e9; color: #fff; }
+    .btn-reset { background: #475569; color: #fff; }
 
-    /* หน้าจอสรุปคะแนนตอนจบ 10 ข้อ */
+    .modal-body {
+      padding: 20px 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .q-editor-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .q-editor-top {
+      display: grid;
+      grid-template-columns: auto 1fr 1.4fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .q-num-tag {
+      background: #334155;
+      color: #facc15;
+      font-weight: 800;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .q-editor-card input[type="text"] {
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      width: 100%;
+    }
+    .q-editor-card input:focus { border-color: #38bdf8; outline: none; }
+    .q-options-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .opt-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #1e293b;
+      padding: 4px 8px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      cursor: pointer;
+    }
+    .opt-input-wrap.is-correct { border-color: #10b981; background: rgba(16, 185, 129, 0.2); }
+    .opt-input-wrap input[type="text"] { border: none; background: transparent; padding: 4px; }
+    .btn-del { background: #ef4444; color: #fff; padding: 6px 10px; border-radius: 8px; }
+
+    .modal-footer {
+      padding: 14px 24px;
+      background: #0f172a;
+      border-top: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .btn-add-q { background: #3b82f6; color: #fff; font-weight: 700; }
+    .btn-save-close { background: #10b981; color: #052e16; font-weight: 800; font-size: 15px; padding: 10px 24px; }
+
+    /* หน้าจอสรุปคะแนนตอนจบ */
     .result-overlay {
       display: none;
       position: fixed;
       inset: 0;
       background: rgba(15, 23, 42, 0.95);
-      z-index: 50;
+      z-index: 9998;
       flex-direction: column;
       align-items: center;
       justify-content: center;
@@ -278,28 +382,40 @@
       border: 3px solid #facc15;
       padding: 40px 50px;
       border-radius: 24px;
-      max-width: 500px;
+      max-width: 520px;
     }
-    .result-score { font-size: 64px; font-weight: 800; color: #10b981; margin: 12px 0; }
+    .result-score { font-size: 64px; font-weight: 800; color: #10b981; margin: 10px 0; }
+
+    @keyframes pulseWarn { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
   </style>
 </head>
 <body>
 
   <!-- แถบควบคุมด้านบน -->
   <div class="top-controls">
-    <div class="game-title">🖐️ คณิตคิดเร็ว ป.3 (การคูณ) — ชูนิ้วตอบคำถาม</div>
+    <div class="game-title">🖐️ เกมตอบคำถามชูนิ้ว (<span id="totalQTitle">10</span> ข้อ)</div>
     <div class="cam-group">
-      <select id="cameraSelect"></select>
-      <button class="btn-start" onclick="initCameraAndGame()">▶ เปิดกล้อง & เริ่มเกม</button>
-      <button class="btn-fullscreen" onclick="toggleFullscreen()">⛶ เต็มจอหน้าชั้นเรียน</button>
+      <button type="button" class="btn-edit" id="btnOpenEditor">⚙️ ตั้งค่าคำถาม</button>
+
+      <div class="time-setting-box" title="ตั้งเวลาถอยหลังทั้งหมด (วินาที)">
+        <span>⏱️ เวลา:</span>
+        <input type="number" id="gameTimeInput" value="60" min="10" max="600">
+        <span>วิ</span>
+      </div>
+
+      <select id="cameraSelect">
+        <option value="">กล้องเริ่มต้น (Default)</option>
+      </select>
+      <button type="button" class="btn-cam" id="btnOpenCam">📷 เปิดกล้อง</button>
+      <button type="button" class="btn-start" id="btnStartGame">🔥 เริ่มเกม!</button>
+      <button type="button" class="btn-fullscreen" id="btnFullscreen">⛶ เต็มจอ</button>
     </div>
   </div>
 
   <!-- พื้นที่เล่นเกม -->
   <div class="game-arena" id="gameArena">
-    <!-- ฝั่งซ้าย: กล้องตรวจจับท่ามือ -->
     <div class="camera-card">
-      <video id="inputVideo" playsinline></video>
+      <video id="inputVideo" playsinline muted></video>
       <canvas id="outputCanvas" width="640" height="480"></canvas>
 
       <div class="finger-hud">
@@ -312,7 +428,7 @@
 
       <div class="hold-progress-wrapper">
         <div class="hold-text">
-          <span id="holdStatusText">✋ ชูนิ้วค้างไว้ 1.5 วินาที เพื่อยืนยันคำตอบ</span>
+          <span id="holdStatusText">✋ กดปุ่ม "📷 เปิดกล้อง" แล้วกด "🔥 เริ่มเกม!"</span>
           <span id="holdPercent">0%</span>
         </div>
         <div class="progress-bar-bg">
@@ -321,80 +437,342 @@
       </div>
     </div>
 
-    <!-- ฝั่งขวา: โจทย์คณิตศาสตร์ ป.3 -->
     <div class="quiz-card">
+      <!-- หน้าจอเตรียมพร้อมก่อนกดปุ่มเริ่มเกม -->
+      <div class="standby-cover" id="standbyCover">
+        <div style="font-size: 64px; margin-bottom: 10px;">⏱️</div>
+        <h2 style="font-size: 28px; color: #facc15; margin-bottom: 8px;">พร้อมเริ่มแข่งขันหรือยัง?</h2>
+        <p style="color: #cbd5e1; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
+          1. กดปุ่ม <strong>"📷 เปิดกล้อง"</strong> เพื่อทดสอบการชูนิ้ว<br>
+          2. ตั้งเวลาที่ต้องการด้านบน แล้วกดปุ่ม <strong>"🔥 เริ่มเกม!"</strong>
+        </p>
+        <button type="button" class="btn-start" style="font-size: 20px; padding: 14px 34px;" id="btnBigStart">🔥 เริ่มเกมและจับเวลา!</button>
+      </div>
+
       <div class="quiz-header">
         <div class="q-badge" id="questionCounter">ข้อที่ 1 / 10</div>
+        <div class="timer-badge" id="timerBadge">⏱️ <span id="timerDisplay">01:00</span></div>
         <div class="score-badge">⭐ คะแนน: <span id="scoreDisplay">0</span></div>
       </div>
 
       <div class="question-box">
         <div class="question-hint" id="questionLevel">ระดับ: สูตรคูณพื้นฐาน</div>
-        <div class="question-math" id="questionText">7 × 8 = ?</div>
+        <div class="question-math" id="questionText">6 × 7 = ?</div>
       </div>
 
       <div class="options-grid">
         <div class="option-item" id="opt-1">
           <div class="finger-icon">☝️1</div>
-          <div class="option-val" id="val-1">54</div>
+          <div class="option-val" id="val-1">42</div>
         </div>
         <div class="option-item" id="opt-2">
           <div class="finger-icon">✌️2</div>
-          <div class="option-val" id="val-2">56</div>
+          <div class="option-val" id="val-2">48</div>
         </div>
         <div class="option-item" id="opt-3">
           <div class="finger-icon">🤟3</div>
-          <div class="option-val" id="val-3">63</div>
+          <div class="option-val" id="val-3">36</div>
         </div>
         <div class="option-item" id="opt-4">
           <div class="finger-icon">🖖4</div>
-          <div class="option-val" id="val-4">48</div>
+          <div class="option-val" id="val-4">49</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- หน้าต่างสรุปคะแนนเมื่อครบ 10 ข้อ -->
+  <!-- หน้าต่างตั้งค่า / แก้ไขคำถาม -->
+  <div class="modal-backdrop" id="editorModal">
+    <div class="editor-modal">
+      <div class="modal-header">
+        <h2>⚙️ ตั้งค่าคำถามและตัวเลือก (ติ๊กวงกลมหน้าข้อที่ถูก)</h2>
+        <div class="io-buttons">
+          <input type="file" id="importFileInput" accept=".json" style="display:none;">
+          <button type="button" class="btn-import" id="btnImportTrigger">📂 นำเข้าไฟล์ (.json)</button>
+          <button type="button" class="btn-export" id="btnExportTrigger">💾 ส่งออกไฟล์ (.json)</button>
+          <button type="button" class="btn-reset" id="btnResetTrigger">🔄 คืนค่าเริ่มต้น</button>
+        </div>
+      </div>
+
+      <div class="modal-body" id="editorListContainer"></div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-add-q" id="btnAddRow">➕ เพิ่มคำถามใหม่</button>
+        <div style="display:flex; gap:10px;">
+          <button type="button" style="background:#475569; color:#fff;" id="btnCancelEditor">ยกเลิก</button>
+          <button type="button" class="btn-save-close" id="btnSaveEditor">✅ บันทึกชุดคำถามนี้</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- หน้าต่างสรุปคะแนนตอนจบ -->
   <div class="result-overlay" id="resultOverlay">
     <div class="result-box">
-      <div style="font-size: 54px;">🏆</div>
-      <h2 style="font-size: 28px; margin-top: 8px;">จบเกมคณิตคิดเร็ว ป.3!</h2>
-      <div class="result-score"><span id="finalScore">0</span> / 10</div>
+      <div style="font-size: 54px;" id="resultEmoji">🏆</div>
+      <h2 style="font-size: 28px; margin-top: 8px;" id="resultTitle">จบเกมตอบคำถาม!</h2>
+      <div class="result-score"><span id="finalScore">0</span> / <span id="finalTotal">10</span></div>
+      <p id="resultTimeInfo" style="color: #38bdf8; font-weight: 700; font-size: 18px; margin-bottom: 6px;"></p>
       <p id="resultFeedback" style="color: #cbd5e1; margin-bottom: 24px;">เก่งมากครับ!</p>
-      <button class="btn-start" style="font-size: 18px; padding: 12px 28px;" onclick="restartGame()">🔄 เล่นใหม่อีกครั้ง</button>
+      <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+        <button type="button" class="btn-edit" style="font-size: 16px; padding: 12px 20px;" id="btnResultEdit">⚙️ แก้ไขคำถาม</button>
+        <button type="button" class="btn-start" style="font-size: 16px; padding: 12px 24px;" id="btnResultRestart">🔄 เล่นใหม่อีกครั้ง</button>
+      </div>
     </div>
   </div>
 
   <script>
-    // ชุดโจทย์คณิตคิดเร็ว การคูณ ป.3 จำนวน 10 ข้อ (เรียงจากง่ายไปท้าทายตามหลักสูตร ป.3)
-    const quizData = [
-      { level: "ข้อ 1: สูตรคูณแม่ 6", q: "6 × 7 = ?", options: [42, 48, 36, 49], answer: 1 },
-      { level: "ข้อ 2: สูตรคูณแม่ 8", q: "8 × 9 = ?", options: [64, 81, 72, 63], answer: 3 },
-      { level: "ข้อ 3: สูตรคูณแม่ 12", q: "12 × 5 = ?", options: [50, 60, 55, 72], answer: 2 },
-      { level: "ข้อ 4: การคูณกับ 10", q: "15 × 10 = ?", options: [105, 1500, 25, 150], answer: 4 },
-      { level: "ข้อ 5: การคูณ 2 หลัก (ไม่มีทด)", q: "21 × 4 = ?", options: [84, 64, 81, 48], answer: 1 },
-      { level: "ข้อ 6: การคูณ 2 หลัก (ไม่มีทด)", q: "32 × 3 = ?", options: [66, 93, 96, 69], answer: 3 },
-      { level: "ข้อ 7: การคูณ 2 หลัก (มีทด)", q: "14 × 3 = ?", options: [32, 42, 52, 37], answer: 2 },
-      { level: "ข้อ 8: การคูณ 2 หลัก (มีทด)", q: "25 × 4 = ?", options: [80, 90, 120, 100], answer: 4 },
-      { level: "ข้อ 9: การคูณจำนวนเต็มสิบ", q: "30 × 6 = ?", options: [180, 120, 160, 90], answer: 1 },
-      { level: "ข้อ 10: โจทย์ท้าทาย ป.3", q: "16 × 5 = ?", options: [75, 85, 80, 90], answer: 3 }
+    const defaultQuizData = [
+      { level: "ข้อ 1: สูตรคูณแม่ 6", q: "6 × 7 = ?", options: ["42", "48", "36", "49"], answer: 1 },
+      { level: "ข้อ 2: สูตรคูณแม่ 8", q: "8 × 9 = ?", options: ["64", "81", "72", "63"], answer: 3 },
+      { level: "ข้อ 3: สูตรคูณแม่ 12", q: "12 × 5 = ?", options: ["50", "60", "55", "72"], answer: 2 },
+      { level: "ข้อ 4: การคูณกับ 10", q: "15 × 10 = ?", options: ["105", "1500", "25", "150"], answer: 4 },
+      { level: "ข้อ 5: การคูณ 2 หลัก (ไม่มีทด)", q: "21 × 4 = ?", options: ["84", "64", "81", "48"], answer: 1 },
+      { level: "ข้อ 6: การคูณ 2 หลัก (ไม่มีทด)", q: "32 × 3 = ?", options: ["66", "93", "96", "69"], answer: 3 },
+      { level: "ข้อ 7: การคูณ 2 หลัก (มีทด)", q: "14 × 3 = ?", options: ["32", "42", "52", "37"], answer: 2 },
+      { level: "ข้อ 8: การคูณ 2 หลัก (มีทด)", q: "25 × 4 = ?", options: ["80", "90", "120", "100"], answer: 4 },
+      { level: "ข้อ 9: การคูณจำนวนเต็มสิบ", q: "30 × 6 = ?", options: ["180", "120", "160", "90"], answer: 1 },
+      { level: "ข้อ 10: โจทย์ท้าทาย ป.3", q: "16 × 5 = ?", options: ["75", "85", "80", "90"], answer: 3 }
     ];
 
+    let quizData = JSON.parse(JSON.stringify(defaultQuizData));
+    try {
+      const saved = localStorage.getItem('customGestureQuizData_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) quizData = parsed;
+      }
+    } catch (e) {}
+
+    let draftQuizData = [];
     let currentQIndex = 0;
     let score = 0;
-    let isLocked = false; // ล็อกระหว่างเฉลยข้อปัจจุบัน
+    let isLocked = false;
+    let isGameActive = false; // ควบคุมว่ากดปุ่มเริ่มเกมแล้วหรือยัง
 
-    // ตัวแปรจับเวลาการค้างท่ามือ (1.5 วินาที)
+    // ตัวแปรเวลาถอยหลัง
+    let timeRemaining = 60;
+    let countdownInterval = null;
+
     let currentHeldFinger = 0;
     let holdStartTime = 0;
-    const HOLD_DURATION = 1500; // 1500 ms = 1.5 วินาที
+    const HOLD_DURATION = 1500;
+
+    let handsInstance = null;
+    let isCameraLoopRunning = false;
+    let lastAiProcessTime = 0;
 
     const videoElement = document.getElementById('inputVideo');
     const canvasElement = document.getElementById('outputCanvas');
     const canvasCtx = canvasElement.getContext('2d');
     const cameraSelect = document.getElementById('cameraSelect');
 
-    // ระบบสร้างเสียงเอฟเฟกต์ (ไม่ต้องใช้ไฟล์ MP3)
+    // ผูก Event Listener กับปุ่มทั้งหมด
+    document.getElementById('btnOpenEditor').addEventListener('click', openEditor);
+    document.getElementById('btnOpenCam').addEventListener('click', initCameraOnly);
+    document.getElementById('btnStartGame').addEventListener('click', startNewGame);
+    document.getElementById('btnBigStart').addEventListener('click', startNewGame);
+    document.getElementById('btnFullscreen').addEventListener('click', toggleFullscreen);
+    document.getElementById('btnImportTrigger').addEventListener('click', () => document.getElementById('importFileInput').click());
+    document.getElementById('importFileInput').addEventListener('change', importQuestions);
+    document.getElementById('btnExportTrigger').addEventListener('click', exportQuestions);
+    document.getElementById('btnResetTrigger').addEventListener('click', resetDefaultQuestions);
+    document.getElementById('btnAddRow').addEventListener('click', addNewQuestionRow);
+    document.getElementById('btnCancelEditor').addEventListener('click', () => closeEditor(false));
+    document.getElementById('btnSaveEditor').addEventListener('click', () => closeEditor(true));
+    document.getElementById('btnResultEdit').addEventListener('click', () => {
+      document.getElementById('resultOverlay').style.display = 'none';
+      openEditor();
+    });
+    document.getElementById('btnResultRestart').addEventListener('click', startNewGame);
+    document.getElementById('gameTimeInput').addEventListener('change', updateInitialTimerPreview);
+
+    function formatTime(sec) {
+      const m = String(Math.floor(sec / 60)).padStart(2, '0');
+      const s = String(sec % 60).padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function updateInitialTimerPreview() {
+      const val = Math.max(10, parseInt(document.getElementById('gameTimeInput').value) || 60);
+      document.getElementById('timerDisplay').textContent = formatTime(val);
+    }
+
+    // =========================================================================
+    // ระบบตั้งค่า / แก้ไขคำถาม
+    // =========================================================================
+    function openEditor() {
+      draftQuizData = JSON.parse(JSON.stringify(quizData));
+      renderEditorList();
+      document.getElementById('editorModal').style.display = 'flex';
+    }
+
+    function renderEditorList() {
+      const container = document.getElementById('editorListContainer');
+      container.innerHTML = '';
+
+      draftQuizData.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = 'q-editor-card';
+
+        const topRow = document.createElement('div');
+        topRow.className = 'q-editor-top';
+
+        const numTag = document.createElement('span');
+        numTag.className = 'q-num-tag';
+        numTag.textContent = `ข้อที่ ${idx + 1}`;
+
+        const levelInput = document.createElement('input');
+        levelInput.type = 'text';
+        levelInput.placeholder = 'หัวข้อ / คำใบ้';
+        levelInput.value = item.level || '';
+        levelInput.addEventListener('input', (e) => { draftQuizData[idx].level = e.target.value; });
+
+        const qInput = document.createElement('input');
+        qInput.type = 'text';
+        qInput.placeholder = 'คำถาม (เช่น 7 × 8 = ?)';
+        qInput.value = item.q || '';
+        qInput.style.fontWeight = '700';
+        qInput.style.color = '#facc15';
+        qInput.addEventListener('input', (e) => { draftQuizData[idx].q = e.target.value; });
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'btn-del';
+        delBtn.textContent = '🗑️ ลบ';
+        delBtn.addEventListener('click', () => removeQuestionRow(idx));
+
+        topRow.append(numTag, levelInput, qInput, delBtn);
+
+        const optRow = document.createElement('div');
+        optRow.className = 'q-options-row';
+
+        for (let optIdx = 0; optIdx < 4; optIdx++) {
+          const wrap = document.createElement('label');
+          wrap.className = `opt-input-wrap ${item.answer === (optIdx + 1) ? 'is-correct' : ''}`;
+          wrap.id = `wrap-${idx}-${optIdx}`;
+
+          const radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.name = `ans-${idx}`;
+          radio.checked = (item.answer === (optIdx + 1));
+          radio.addEventListener('change', () => setCorrectOption(idx, optIdx + 1));
+
+          const numSpan = document.createElement('span');
+          numSpan.style.color = '#38bdf8';
+          numSpan.style.fontWeight = '800';
+          numSpan.textContent = `${optIdx + 1}.`;
+
+          const optText = document.createElement('input');
+          optText.type = 'text';
+          optText.placeholder = `ตัวเลือก ${optIdx + 1}`;
+          optText.value = item.options[optIdx] !== undefined ? String(item.options[optIdx]) : '';
+          optText.addEventListener('input', (e) => { draftQuizData[idx].options[optIdx] = e.target.value; });
+
+          wrap.append(radio, numSpan, optText);
+          optRow.appendChild(wrap);
+        }
+
+        card.append(topRow, optRow);
+        container.appendChild(card);
+      });
+    }
+
+    function setCorrectOption(qIdx, ansNum) {
+      draftQuizData[qIdx].answer = ansNum;
+      for (let i = 0; i < 4; i++) {
+        const wrap = document.getElementById(`wrap-${qIdx}-${i}`);
+        if (wrap) {
+          if ((i + 1) === ansNum) wrap.classList.add('is-correct');
+          else wrap.classList.remove('is-correct');
+        }
+      }
+    }
+
+    function addNewQuestionRow() {
+      const nextNum = draftQuizData.length + 1;
+      draftQuizData.push({
+        level: `ข้อ ${nextNum}: หมวดหมู่คำถาม`,
+        q: "พิมพ์คำถามที่นี่...",
+        options: ["ตัวเลือก 1", "ตัวเลือก 2", "ตัวเลือก 3", "ตัวเลือก 4"],
+        answer: 1
+      });
+      renderEditorList();
+      const body = document.getElementById('editorListContainer');
+      body.scrollTop = body.scrollHeight;
+    }
+
+    function removeQuestionRow(idx) {
+      if (draftQuizData.length <= 1) {
+        alert("ต้องมีคำถามอย่างน้อย 1 ข้อครับ!");
+        return;
+      }
+      draftQuizData.splice(idx, 1);
+      renderEditorList();
+    }
+
+    function resetDefaultQuestions() {
+      if (confirm("ต้องการคืนค่าเป็นโจทย์คณิตคิดเร็ว ป.3 เริ่มต้นทั้งหมดหรือไม่?")) {
+        draftQuizData = JSON.parse(JSON.stringify(defaultQuizData));
+        renderEditorList();
+      }
+    }
+
+    function closeEditor(saveChanges) {
+      if (saveChanges) {
+        for (let i = 0; i < draftQuizData.length; i++) {
+          if (!draftQuizData[i].q || !draftQuizData[i].q.trim()) {
+            alert(`กรุณากรอกคำถามในข้อที่ ${i + 1} ให้ครบถ้วนครับ`);
+            return;
+          }
+        }
+        quizData = JSON.parse(JSON.stringify(draftQuizData));
+        try {
+          localStorage.setItem('customGestureQuizData_v2', JSON.stringify(quizData));
+        } catch (e) {}
+        currentQIndex = 0;
+        renderQuestion();
+      }
+      document.getElementById('editorModal').style.display = 'none';
+    }
+
+    function exportQuestions() {
+      const dataStr = JSON.stringify(draftQuizData, null, 2);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ชุดคำถามเกมชูนิ้ว_${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function importQuestions(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (!Array.isArray(parsed) || parsed.length === 0 || !parsed[0].q || !Array.isArray(parsed[0].options)) {
+            throw new Error("รูปแบบไฟล์ไม่ถูกต้อง");
+          }
+          draftQuizData = parsed;
+          renderEditorList();
+          alert(`นำเข้าคำถามสำเร็จจำนวน ${parsed.length} ข้อ!`);
+        } catch (err) {
+          alert("ไม่สามารถนำเข้าไฟล์ได้: กรุณาเลือกไฟล์ .json ที่ส่งออกจากเกมนี้เท่านั้น");
+        }
+        event.target.value = '';
+      };
+      reader.readAsText(file);
+    }
+
+    // =========================================================================
+    // ระบบเสียงและตรรกะเกม + เวลาถอยหลัง
+    // =========================================================================
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playSound(type) {
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -405,9 +783,9 @@
 
       if (type === 'correct') {
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
-        osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+        osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2);
         gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
         osc.start();
@@ -420,36 +798,44 @@
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
         osc.start();
         osc.stop(audioCtx.currentTime + 0.4);
+      } else if (type === 'timeup') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.6);
+        gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.65);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.65);
       }
     }
 
-    // โหลดรายชื่อกล้อง (Iriun Webcam)
-    async function loadCameras() {
+    async function refreshCameraList() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
       try {
-        const temp = await navigator.mediaDevices.getUserMedia({ video: true });
-        temp.getTracks().forEach(t => t.stop());
         const devices = await navigator.mediaDevices.enumerateDevices();
         const cams = devices.filter(d => d.kind === 'videoinput');
-        cameraSelect.innerHTML = '';
-        cams.forEach((cam, idx) => {
-          const opt = document.createElement('option');
-          opt.value = cam.deviceId;
-          opt.text = cam.label || `Camera ${idx + 1}`;
-          if (opt.text.toLowerCase().includes('iriun')) opt.selected = true;
-          cameraSelect.appendChild(opt);
-        });
-      } catch (e) {
-        console.warn("กรุณารันผ่าน localhost เพื่อใช้งานกล้อง:", e);
-      }
+        if (cams.length > 0) {
+          const currentVal = cameraSelect.value;
+          cameraSelect.innerHTML = '';
+          cams.forEach((cam, idx) => {
+            const opt = document.createElement('option');
+            opt.value = cam.deviceId;
+            opt.text = cam.label || `กล้องตัวที่ ${idx + 1}`;
+            if (currentVal && cam.deviceId === currentVal) opt.selected = true;
+            else if (!currentVal && opt.text.toLowerCase().includes('iriun')) opt.selected = true;
+            cameraSelect.appendChild(opt);
+          });
+        }
+      } catch (e) {}
     }
 
-    // แสดงโจทย์ข้อปัจจุบัน
     function renderQuestion() {
       isLocked = false;
       currentHeldFinger = 0;
       holdStartTime = 0;
       updateHoldUI(0, 0);
 
+      document.getElementById('totalQTitle').textContent = quizData.length;
       const item = quizData[currentQIndex];
       document.getElementById('questionCounter').textContent = `ข้อที่ ${currentQIndex + 1} / ${quizData.length}`;
       document.getElementById('questionLevel').textContent = item.level;
@@ -462,9 +848,49 @@
       }
     }
 
-    // ตรวจคำตอบเมื่อชูนิ้วครบ 1.5 วินาที
+    // เริ่มเกมและเริ่มนับเวลาถอยหลังตามที่ตั้งไว้
+    async function startNewGame() {
+      // หากยังไม่เปิดกล้อง ให้เปิดกล้องให้อัตโนมัติก่อนเริ่มเกม
+      if (!isCameraLoopRunning) {
+        const camOpened = await initCameraOnly();
+        if (!camOpened) return;
+      }
+
+      clearInterval(countdownInterval);
+      currentQIndex = 0;
+      score = 0;
+      isGameActive = true;
+
+      document.getElementById('scoreDisplay').textContent = 0;
+      document.getElementById('resultOverlay').style.display = 'none';
+      document.getElementById('standbyCover').style.display = 'none';
+
+      // อ่านค่าเวลาที่ตั้งไว้และเริ่มนับถอยหลัง
+      timeRemaining = Math.max(10, parseInt(document.getElementById('gameTimeInput').value) || 60);
+      const timerBadge = document.getElementById('timerBadge');
+      timerBadge.classList.remove('warning');
+      document.getElementById('timerDisplay').textContent = formatTime(timeRemaining);
+
+      renderQuestion();
+
+      countdownInterval = setInterval(() => {
+        if (!isGameActive) return;
+        timeRemaining--;
+        document.getElementById('timerDisplay').textContent = formatTime(Math.max(0, timeRemaining));
+
+        if (timeRemaining <= 10 && timeRemaining > 0) {
+          timerBadge.classList.add('warning');
+        }
+
+        if (timeRemaining <= 0) {
+          clearInterval(countdownInterval);
+          showFinalResult(true); // จบเกมเพราะหมดเวลา
+        }
+      }, 1000);
+    }
+
     function submitAnswer(selectedChoice) {
-      if (isLocked) return;
+      if (isLocked || !isGameActive) return;
       isLocked = true;
 
       const correctChoice = quizData[currentQIndex].answer;
@@ -484,62 +910,77 @@
         playSound('wrong');
       }
 
-      // ไปข้อถัดไปอัตโนมัติใน 2.2 วินาที
       setTimeout(() => {
+        if (!isGameActive) return;
         currentQIndex++;
         if (currentQIndex < quizData.length) {
           renderQuestion();
         } else {
-          showFinalResult();
+          clearInterval(countdownInterval);
+          showFinalResult(false); // จบเกมเพราะตอบครบทุกข้อ
         }
-      }, 2200);
+      }, 1800);
     }
 
-    function showFinalResult() {
+    function showFinalResult(isTimeUp) {
+      isGameActive = false;
+      isLocked = true;
+      document.getElementById('timerBadge').classList.remove('warning');
+
       document.getElementById('finalScore').textContent = score;
-      let msg = "สุดยอดเลยครับ! แม่นสูตรคูณ ป.3 มาก";
-      if (score < 5) msg = "ไม่เป็นไรครับ ลองฝึกท่องสูตรคูณแล้วมาแก้มือใหม่นะ!";
-      else if (score < 8) msg = "เก่งมากครับ อีกนิดเดียวจะเต็ม 10 แล้ว!";
+      document.getElementById('finalTotal').textContent = quizData.length;
+
+      if (isTimeUp) {
+        playSound('timeup');
+        document.getElementById('resultEmoji').textContent = "⏰";
+        document.getElementById('resultTitle').textContent = "หมดเวลาการแข่งขัน!";
+        document.getElementById('resultTimeInfo').textContent = "⏱️ เวลาหมดแล้ว (00:00)";
+      } else {
+        document.getElementById('resultEmoji').textContent = "🏆";
+        document.getElementById('resultTitle').textContent = "ตอบครบทุกข้อแล้ว!";
+        document.getElementById('resultTimeInfo').textContent = `⏱️ เหลือเวลาอีก ${formatTime(timeRemaining)}`;
+      }
+
+      const ratio = score / quizData.length;
+      let msg = "สุดยอดเลยครับ! ตอบได้แม่นยำและรวดเร็วมาก";
+      if (ratio < 0.5) msg = "ไม่เป็นไรครับ ลองฝึกฝนแล้วมาแก้มือใหม่นะ!";
+      else if (ratio < 0.8) msg = "เก่งมากครับ อีกนิดเดียวจะเต็มแล้ว!";
       document.getElementById('resultFeedback').textContent = msg;
       document.getElementById('resultOverlay').style.display = 'flex';
     }
 
-    function restartGame() {
-      currentQIndex = 0;
-      score = 0;
-      document.getElementById('scoreDisplay').textContent = 0;
-      document.getElementById('resultOverlay').style.display = 'none';
-      renderQuestion();
-    }
-
-    // อัปเดตหลอดโหลดและไฮไลต์ตัวเลือก
     function updateHoldUI(finger, percent) {
       document.getElementById('holdProgressBar').style.width = percent + '%';
       document.getElementById('holdPercent').textContent = Math.round(percent) + '%';
 
       for (let i = 1; i <= 4; i++) {
         const el = document.getElementById(`opt-${i}`);
-        if (!isLocked) {
+        if (!isLocked && isGameActive) {
           if (i === finger) el.classList.add('active');
           else el.classList.remove('active');
+        } else {
+          el.classList.remove('active');
         }
       }
 
-      if (!isLocked) {
+      if (!isGameActive && isCameraLoopRunning) {
+        document.getElementById('holdStatusText').textContent = "✅ กล้องพร้อมแล้ว! กดปุ่ม '🔥 เริ่มเกม!' เพื่อเริ่มจับเวลา";
+        return;
+      }
+
+      if (!isLocked && isGameActive) {
         if (finger >= 1 && finger <= 4) {
           document.getElementById('holdStatusText').textContent = `⏳ กำลังเลือกข้อ ${finger} ... ค้างไว้!`;
         } else if (finger === 0) {
-          document.getElementById('holdStatusText').textContent = "✊ กำมืออยู่ (พร้อมเริ่ม) — ชู 1-4 นิ้ว เพื่อตอบ";
+          document.getElementById('holdStatusText').textContent = "✊ กำมืออยู่ (พร้อม) — ชู 1-4 นิ้ว เพื่อตอบ";
         } else {
           document.getElementById('holdStatusText').textContent = "✋ ชูได้สูงสุด 4 นิ้วนะครับ";
         }
       }
     }
 
-    // อัลกอริทึมนับจำนวนนิ้วที่ชูขึ้น (1-5 นิ้ว)
     function countExtendedFingers(landmarks) {
       let count = 0;
-      // 1. นิ้วชี้ (8 เทียบ 6), นิ้วกลาง (12 เทียบ 10), นิ้วนาง (16 เทียบ 14), นิ้วก้อย (20 เทียบ 18)
       const fingerTips = [8, 12, 16, 20];
       const fingerPips = [6, 10, 14, 18];
       for (let i = 0; i < 4; i++) {
@@ -547,12 +988,10 @@
           count++;
         }
       }
-      // 2. นิ้วโป้ง (เช็กระยะห่างแนวนอนเทียบกับข้อนิ้วชี้)
       const thumbTipX = landmarks[4].x;
       const thumbIpX = landmarks[3].x;
       const indexMcpX = landmarks[5].x;
       const wristX = landmarks[0].x;
-      // ตรวจสอบทิศทางฝ่ามือ (ซ้ายหรือขวา)
       if (indexMcpX < wristX) {
         if (thumbTipX < thumbIpX - 0.02) count++;
       } else {
@@ -561,7 +1000,6 @@
       return count;
     }
 
-    // ประมวลผลภาพจาก MediaPipe Hands
     function onResults(results) {
       canvasCtx.save();
       canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
@@ -571,7 +1009,6 @@
 
       if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
         const landmarks = results.multiHandLandmarks[0];
-        // วาดเส้นโครงกระดูกนิ้วมือสีสดใสให้เด็กเห็นบนจอ
         drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#38bdf8', lineWidth: 4 });
         drawLandmarks(canvasCtx, landmarks, { color: '#facc15', lineWidth: 2, radius: 5 });
 
@@ -581,8 +1018,7 @@
         document.getElementById('detectedFingers').textContent = "-";
       }
 
-      // ตรรกะจับเวลาการชู 1-4 นิ้วค้างไว้
-      if (!isLocked) {
+      if (!isLocked && isGameActive) {
         if (fingerCount >= 1 && fingerCount <= 4) {
           if (fingerCount === currentHeldFinger) {
             const elapsed = Date.now() - holdStartTime;
@@ -601,38 +1037,80 @@
           holdStartTime = 0;
           updateHoldUI(fingerCount, 0);
         }
+      } else if (!isGameActive) {
+        updateHoldUI(fingerCount, 0);
       }
 
       canvasCtx.restore();
     }
 
-    // เริ่มต้นกล้องและ AI MediaPipe
-    async function initCameraAndGame() {
-      renderQuestion();
-      const hands = new Hands({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-      });
-      hands.setOptions({
-        maxNumHands: 1,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.7,
-        minTrackingConfidence: 0.7
-      });
-      hands.onResults(onResults);
+    // เปิดกล้องและเตรียมระบบ AI (ยังไม่เริ่มนับเวลาจนกว่าจะกดปุ่มเริ่มเกม)
+    async function initCameraOnly() {
+      const btn = document.getElementById('btnOpenCam');
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: cameraSelect.value ? { exact: cameraSelect.value } : undefined, width: 640, height: 480 }
-      });
-      videoElement.srcObject = stream;
-      videoElement.play();
-
-      async function processFrame() {
-        if (!videoElement.paused && !videoElement.ended) {
-          await hands.send({ image: videoElement });
-        }
-        requestAnimationFrame(processFrame);
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("ไม่สามารถเปิดกล้องได้ กรุณารันผ่าน Local Server (http://localhost) หรือ HTTPS ครับ");
+        return false;
       }
-      processFrame();
+
+      btn.textContent = "⏳ กำลังเปิดกล้อง...";
+      btn.disabled = true;
+
+      try {
+        if (videoElement.srcObject) {
+          videoElement.srcObject.getTracks().forEach(t => t.stop());
+        }
+
+        const selectedDeviceId = cameraSelect.value;
+        const constraints = {
+          video: selectedDeviceId
+            ? { deviceId: { ideal: selectedDeviceId }, width: { ideal: 640 }, height: { ideal: 480 } }
+            : { width: { ideal: 640 }, height: { ideal: 480 } },
+          audio: false
+        };
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        videoElement.srcObject = stream;
+        await videoElement.play();
+        await refreshCameraList();
+
+        if (!handsInstance) {
+          handsInstance = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+          });
+          handsInstance.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7
+          });
+          handsInstance.onResults(onResults);
+        }
+
+        btn.textContent = "✅ กล้องพร้อมแล้ว";
+        btn.disabled = false;
+
+        if (!isCameraLoopRunning) {
+          isCameraLoopRunning = true;
+          async function processFrame() {
+            const now = performance.now();
+            if (!videoElement.paused && !videoElement.ended && (now - lastAiProcessTime >= 50)) {
+              lastAiProcessTime = now;
+              try {
+                await handsInstance.send({ image: videoElement });
+              } catch (e) {}
+            }
+            requestAnimationFrame(processFrame);
+          }
+          processFrame();
+        }
+        return true;
+      } catch (err) {
+        alert("เกิดข้อผิดพลาดในการเปิดกล้อง: " + err.message);
+        btn.textContent = "📷 เปิดกล้อง";
+        btn.disabled = false;
+        return false;
+      }
     }
 
     function toggleFullscreen() {
@@ -644,7 +1122,8 @@
       }
     }
 
-    loadCameras();
+    refreshCameraList();
+    updateInitialTimerPreview();
     renderQuestion();
   </script>
 </body>
