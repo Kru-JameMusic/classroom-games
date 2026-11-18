@@ -22,13 +22,14 @@
       width: 100%;
       max-width: 1200px;
       text-align: center;
-      margin-bottom: 28px;
-      padding: 28px 20px;
+      margin-bottom: 24px;
+      padding: 26px 20px;
       background: rgba(30, 41, 59, 0.65);
       border: 1px solid #334155;
       border-radius: 24px;
       backdrop-filter: blur(10px);
       box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      position: relative;
     }
     .school-badge {
       display: inline-block;
@@ -51,12 +52,12 @@
     }
     .header p {
       color: #cbd5e1;
-      font-size: 16px;
+      font-size: 15px;
       max-width: 680px;
       margin: 0 auto;
     }
 
-    /* แถบค้นหาและตัวกรองหมวดหมู่ */
+    /* แถบค้นหา ตัวกรองหมวดหมู่ และปุ่มจัดการ */
     .filter-bar {
       width: 100%;
       max-width: 1200px;
@@ -92,9 +93,15 @@
       box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
     }
 
+    .right-tools {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
     .search-box {
       position: relative;
-      min-width: 260px;
+      min-width: 240px;
     }
     .search-box input {
       width: 100%;
@@ -116,12 +123,29 @@
       font-size: 14px;
     }
 
+    .btn-manage {
+      background: linear-gradient(90deg, #f59e0b, #d97706);
+      color: #090d16;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
+      transition: transform 0.1s, filter 0.2s;
+    }
+    .btn-manage:hover { filter: brightness(1.1); transform: scale(1.03); }
+
     /* ตารางการ์ดเกม (Grid) */
     .games-grid {
       width: 100%;
       max-width: 1200px;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
       gap: 20px;
     }
 
@@ -138,7 +162,7 @@
       overflow: hidden;
     }
     .game-card:hover {
-      transform: translateY(-6px);
+      transform: translateY(-5px);
       border-color: #38bdf8;
       box-shadow: 0 16px 35px rgba(0,0,0,0.7);
     }
@@ -148,17 +172,19 @@
       justify-content: space-between;
       align-items: flex-start;
       margin-bottom: 14px;
+      gap: 10px;
     }
     .game-icon {
-      font-size: 52px;
-      width: 76px;
-      height: 76px;
+      font-size: 48px;
+      width: 72px;
+      height: 72px;
       background: rgba(255, 255, 255, 0.06);
       border-radius: 18px;
       display: flex;
       align-items: center;
       justify-content: center;
       border: 1px solid rgba(255, 255, 255, 0.1);
+      flex-shrink: 0;
     }
     .badges {
       display: flex;
@@ -185,7 +211,7 @@
     }
 
     .game-title {
-      font-size: 21px;
+      font-size: 20px;
       font-weight: 800;
       color: #fff;
       margin-bottom: 6px;
@@ -193,7 +219,7 @@
     .game-desc {
       font-size: 14px;
       color: #94a3b8;
-      line-height: 1.5;
+      line-height: 1.55;
       margin-bottom: 18px;
     }
 
@@ -201,22 +227,40 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 8px;
       padding-top: 14px;
       border-top: 1px solid #1e293b;
+      flex-wrap: wrap;
     }
     .grade-tag {
       font-size: 12px;
       font-weight: 700;
       color: #cbd5e1;
     }
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-quick-edit {
+      background: #334155;
+      color: #e2e8f0;
+      border: 1px solid #475569;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-quick-edit:hover { background: #475569; color: #fff; }
+
     .btn-play {
       background: linear-gradient(90deg, #10b981, #059669);
       color: #fff;
       text-decoration: none;
       font-weight: 800;
-      font-size: 15px;
-      padding: 10px 22px;
+      font-size: 14px;
+      padding: 9px 18px;
       border-radius: 12px;
       display: inline-flex;
       align-items: center;
@@ -232,7 +276,7 @@
       pointer-events: none;
     }
 
-    /* กล่องคำแนะนำการเพิ่มเกมสำหรับครู */
+    /* แถบด้านล่าง */
     .admin-note {
       width: 100%;
       max-width: 1200px;
@@ -240,7 +284,7 @@
       background: rgba(15, 23, 42, 0.8);
       border: 1px dashed #475569;
       border-radius: 16px;
-      padding: 16px 22px;
+      padding: 14px 22px;
       font-size: 13px;
       color: #94a3b8;
       display: flex;
@@ -249,12 +293,184 @@
       flex-wrap: wrap;
       gap: 10px;
     }
-    code {
+
+    /* =================================================================
+       หน้าต่างจัดการรายการเกมและหมวดหมู่ (Manager Modal)
+       ================================================================= */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 13, 22, 0.9);
+      backdrop-filter: blur(6px);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-box {
       background: #1e293b;
+      border: 2px solid #facc15;
+      border-radius: 22px;
+      width: 100%;
+      max-width: 1050px;
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.9);
+    }
+    .modal-header {
+      padding: 16px 22px;
+      background: #0f172a;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .modal-header h2 { font-size: 18px; color: #facc15; }
+    .header-io-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-sm {
+      padding: 7px 12px;
+      border-radius: 8px;
+      border: none;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+    }
+    .btn-sm:hover { filter: brightness(1.1); }
+
+    .modal-body {
+      padding: 18px 22px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* ส่วนจัดการหมวดหมู่ */
+    .section-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 14px 16px;
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: 800;
       color: #38bdf8;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: monospace;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cat-chips-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .cat-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #1e293b;
+      border: 1px solid #475569;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+    }
+    .cat-chip input {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      width: 110px;
+      outline: none;
+    }
+    .cat-chip button {
+      background: transparent;
+      border: none;
+      color: #f87171;
+      font-weight: 800;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    /* รายการฟอร์มแก้ไขแต่ละเกม */
+    .game-edit-item {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .game-edit-item.highlight {
+      border-color: #facc15;
+      box-shadow: 0 0 15px rgba(250, 204, 21, 0.25);
+    }
+    .edit-item-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .edit-grid {
+      display: grid;
+      grid-template-columns: 75px 1.4fr 1fr 1fr;
+      gap: 8px;
+    }
+    .edit-grid-2 {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 0.8fr;
+      gap: 8px;
+    }
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .field-group label {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+    .field-group input, .field-group select, .field-group textarea {
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #fff;
+      padding: 7px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      width: 100%;
+    }
+    .field-group input:focus, .field-group select:focus, .field-group textarea:focus {
+      border-color: #facc15;
+      outline: none;
+    }
+
+    .modal-footer {
+      padding: 14px 22px;
+      background: #0f172a;
+      border-top: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    @media (max-width: 768px) {
+      .edit-grid, .edit-grid-2 {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -267,92 +483,195 @@
     <p>เลือกเกมด้านล่างเพื่อเปิดใช้งานแบบเต็มหน้าจอ รองรับการควบคุมด้วยกล้อง AI จับท่าทาง ไมโครโฟน และคีย์บอร์ด</p>
   </header>
 
-  <!-- แถบค้นหาและตัวกรองหมวดหมู่ -->
+  <!-- แถบค้นหา ตัวกรองหมวดหมู่ และปุ่มจัดการ -->
   <div class="filter-bar">
-    <div class="category-tabs" id="categoryTabs">
-      <button class="tab-btn active" data-cat="all">🌟 ทั้งหมด</button>
-      <button class="tab-btn" data-cat="english">🔤 ภาษาอังกฤษ</button>
-      <button class="tab-btn" data-cat="math">🔢 คณิตศาสตร์</button>
-      <button class="tab-btn" data-cat="movement">🕺 เต้น & เคลื่อนไหว</button>
-      <button class="tab-btn" data-cat="music">🎵 ดนตรี & จังหวะ</button>
-    </div>
-    <div class="search-box">
-      <input type="text" id="searchInput" placeholder="ค้นหาชื่อเกม หรือ ระดับชั้น..." oninput="renderGames()">
+    <div class="category-tabs" id="categoryTabs"></div>
+
+    <div class="right-tools">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="ค้นหาชื่อเกม หรือ ระดับชั้น..." oninput="renderGames()">
+      </div>
+      <button type="button" class="btn-manage" onclick="openManagerModal()">⚙️ จัดการรายการเกม</button>
     </div>
   </div>
 
   <!-- พื้นที่แสดงการ์ดเกมทั้งหมด -->
   <main class="games-grid" id="gamesGrid"></main>
 
-  <!-- แถบแจ้งวิธีเพิ่มเกมใหม่ในอนาคต -->
+  <!-- แถบด้านล่าง -->
   <footer class="admin-note">
-    <div>💡 <strong>วิธีเพิ่มเกมใหม่ในอนาคต:</strong> นำไฟล์ <code>.html</code> ของเกมใหม่มาวางในโฟลเดอร์เดียวกัน แล้วเพิ่มชื่อไฟล์ในตัวแปร <code>gamesList</code> ท้ายไฟล์ <code>index.html</code> นี้</div>
+    <div>💡 คลิกปุ่ม <strong>"⚙️ จัดการรายการเกม"</strong> ด้านบนเพื่อเพิ่มเกม แก้ชื่อเกม เปลี่ยนลิงก์ไฟล์ หรือเพิ่มหมวดหมู่ได้ทันทีโดยไม่ต้องแก้โค้ด</div>
     <div>ครูผู้สอน: นายณัฐพล ชั้นกระโทก</div>
   </footer>
 
-  <script>
-    // =========================================================================
-    // 📌 รายการเกมทั้งหมด (ในอนาคตเพิ่มเกมใหม่ได้ง่ายๆ แค่คัดลอกบล็อก { ... } มาต่อท้าย)
-    // =========================================================================
-    const gamesList = [
-      {
-        title: "Virtual Catch: คว้าสระ A E I O U",
-        desc: "เกมคว้าลูกบอลสระภาษาอังกฤษกลางอากาศด้วยท่ากำมือ เติมคำศัพท์พื้นฐาน 15 ข้อ แข่งจับเวลา พร้อมระบบวนข้อที่ผิดกลับมาแก้ตัว",
-        icon: "✊",
-        category: "english",
-        categoryLabel: "ภาษาอังกฤษ",
-        sensor: "📷 กล้อง AI (จับมือ)",
-        grade: "ชั้น ป.3",
-        file: "vowel-catch-p3.html", // ต้องตรงกับชื่อไฟล์ .html ที่บันทึกไว้
-        ready: true
-      },
-      {
-        title: "ศึกดวลแดนซ์ 1v1 (โครงกระดูก AI)",
-        desc: "เกมแข่งขันเต้นพร้อมกัน 2 คน แบ่งฝั่งซ้าย-ขวา จับโครงกระดูกก้างปลาเรืองแสง 33 จุด วัดความเร็วการขยับข้อต่อ ปรับความไวได้",
-        icon: "🦴",
-        category: "movement",
-        categoryLabel: "เต้น & เคลื่อนไหว",
-        sensor: "📷 กล้อง AI (โครงกระดูก 2 คน)",
-        grade: "ทุกระดับชั้น",
-        file: "dance-battle-2p.html",
-        ready: true
-      },
-      {
-        title: "ชูนิ้วตอบคำถาม",
-        desc: "เกมฝึกบวกลบเลขเร็วหน้าชั้นเรียน ตรวจจับจำนวนนิ้วมือที่ชูขึ้นหน้ากล้องเพื่อตอบคำถามแข่งกับเวลา",
-        icon: "🖐️",
-        category: "math",
-        categoryLabel: "คณิตศาสตร์",
-        sensor: "📷 กล้อง AI (นับนิ้วมือ)",
-        grade: "ชั้น ป.1 - ป.6",
-        file: "math-p3-gesture-quiz.html", // แก้ชื่อไฟล์ให้ตรงกับไฟล์เกมคณิตคิดเร็วของคุณครู
-        ready: true
-      },
-      {
-        title: "เกมเป่าเมโลเดียน & ทายระดับเสียง",
-        desc: "พื้นที่เตรียมไว้สำหรับเกมดนตรีในอนาคต (จับเสียงไมโครโฟนวัดความแม่นยำตัวโน้ต โด เร มี ฟา ซอล)",
-        icon: "🎹",
-        category: "music",
-        categoryLabel: "ดนตรี & จังหวะ",
-        sensor: "🎤 ไมโครโฟน (Web Audio)",
-        grade: "ชั้น ป.3 - ป.6",
-        file: "melodion-pitch-game.html",
-        ready: false // เปลี่ยนเป็น true เมื่อสร้างไฟล์เกมนี้เสร็จแล้ว
-      }
-    ];
-    // =========================================================================
+  <!-- หน้าต่างจัดการรายการเกมและหมวดหมู่ -->
+  <div class="modal-backdrop" id="managerModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>⚙️ จัดการรายการเกมและหมวดหมู่</h2>
+        <div class="header-io-btns">
+          <input type="file" id="importJsonInput" accept=".json" style="display:none;" onchange="importPortalConfig(event)">
+          <button type="button" class="btn-sm" style="background:#0ea5e9;" onclick="document.getElementById('importJsonInput').click()">📂 นำเข้า (.json)</button>
+          <button type="button" class="btn-sm" style="background:#6366f1;" onclick="exportPortalConfig()">💾 ส่งออกไฟล์ตั้งค่า (games-config.json)</button>
+          <button type="button" class="btn-sm" style="background:#475569;" onclick="resetPortalConfig()">🔄 คืนค่าเริ่มต้น</button>
+        </div>
+      </div>
 
+      <div class="modal-body">
+        <!-- จัดการหมวดหมู่ -->
+        <div class="section-card">
+          <div class="section-title">
+            <span>🏷️ หมวดหมู่เกม (แท็บตัวกรองด้านบน)</span>
+            <button type="button" class="btn-sm" style="background:#3b82f6;" onclick="addNewCategory()">➕ เพิ่มหมวดหมู่</button>
+          </div>
+          <div class="cat-chips-wrap" id="categoryEditorWrap"></div>
+        </div>
+
+        <!-- จัดการรายการเกม -->
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:15px; font-weight:800; color:#facc15;">🕹️ รายการเกมทั้งหมด (<span id="draftGameCount">0</span> เกม)</span>
+          <button type="button" class="btn-sm" style="background:#10b981; color:#052e16;" onclick="addNewGameItem()">➕ เพิ่มเกมใหม่</button>
+        </div>
+
+        <div id="gamesEditorList" style="display:flex; flex-direction:column; gap:12px;"></div>
+      </div>
+
+      <div class="modal-footer">
+        <span style="font-size:12px; color:#94a3b8;">* หากต้องการอัปเดตให้ทุกเครื่องที่เข้าผ่าน GitHub เห็นตรงกัน ให้กดส่งออกไฟล์ <code>games-config.json</code> ไปวางทับในโฟลเดอร์เว็บ</span>
+        <div style="display:flex; gap:10px;">
+          <button type="button" class="btn-sm" style="background:#475569; padding:10px 18px;" onclick="closeManagerModal(false)">ยกเลิก</button>
+          <button type="button" class="btn-sm" style="background:#10b981; color:#052e16; font-size:15px; padding:10px 24px;" onclick="closeManagerModal(true)">✅ บันทึกการเปลี่ยนแปลง</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "nonchan_classroom_games_portal_v1";
+
+    // ข้อมูลตั้งต้น (Fallback หากยังไม่มีไฟล์ games-config.json หรือ localStorage)
+    const defaultPortalData = {
+      categories: [
+        { id: "english", label: "🔤 ภาษาอังกฤษ" },
+        { id: "math", label: "🔢 คณิตศาสตร์" },
+        { id: "movement", label: "🕺 เต้น & เคลื่อนไหว" },
+        { id: "music", label: "🎵 ดนตรี & จังหวะ" }
+      ],
+      games: [
+        {
+          title: "Virtual Catch: คว้าสระ A E I O U",
+          desc: "เกมคว้าลูกบอลสระภาษาอังกฤษกลางอากาศด้วยท่ากำมือ เติมคำศัพท์พื้นฐาน ปรับจำนวนลูกบอล ภาพคำใบ้ และโหมดแข่งเวลา/คะแนนได้",
+          icon: "✊",
+          category: "english",
+          sensor: "📷 กล้อง AI (จับมือ)",
+          grade: "ชั้น ป.3",
+          file: "vowel-catch-p3.html",
+          ready: true
+        },
+        {
+          title: "ศึกดวลแดนซ์ 1v1 (โครงกระดูก AI)",
+          desc: "เกมแข่งขันเต้นพร้อมกัน 2 คน แบ่งฝั่งซ้าย-ขวา จับโครงกระดูกก้างปลาเรืองแสง 33 จุด วัดความเร็วการขยับข้อต่อ ใส่เพลง YouTube/MP3 ได้",
+          icon: "🦴",
+          category: "movement",
+          sensor: "📷 กล้อง AI (โครงกระดูก 2 คน)",
+          grade: "ทุกระดับชั้น",
+          file: "dance-battle-2p.html",
+          ready: true
+        },
+        {
+          title: "ชูนิ้วตอบคำถาม",
+          desc: "เกมฝึกบวกลบเลขเร็วหน้าชั้นเรียน ตรวจจับจำนวนนิ้วมือที่ชูขึ้นหน้ากล้องเพื่อตอบคำถามแข่งกับเวลา",
+          icon: "🖐️",
+          category: "math",
+          sensor: "📷 กล้อง AI (นับนิ้วมือ)",
+          grade: "ชั้น ป.1 - ป.6",
+          file: "math-p3-gesture-quiz.html",
+          ready: true
+        },
+        {
+          title: "เกมเป่าเมโลเดียน & ทายระดับเสียง",
+          desc: "พื้นที่เตรียมไว้สำหรับเกมดนตรีในอนาคต (จับเสียงไมโครโฟนวัดความแม่นยำตัวโน้ต โด เร มี ฟา ซอล)",
+          icon: "🎹",
+          category: "music",
+          sensor: "🎤 ไมโครโฟน (Web Audio)",
+          grade: "ชั้น ป.3 - ป.6",
+          file: "melodion-pitch-game.html",
+          ready: false
+        }
+      ]
+    };
+
+    let portalData = JSON.parse(JSON.stringify(defaultPortalData));
+    let draftData = null;
     let activeCategory = "all";
 
-    // ตั้งค่าปุ่มเลือกหมวดหมู่
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        activeCategory = btn.dataset.cat;
+    // โหลดข้อมูลตามลำดับความสำคัญ: localStorage -> games-config.json -> defaultPortalData
+    async function initPortal() {
+      let loadedFromLocal = false;
+      try {
+        const localStr = localStorage.getItem(STORAGE_KEY);
+        if (localStr) {
+          const parsed = JSON.parse(localStr);
+          if (parsed && Array.isArray(parsed.games) && Array.isArray(parsed.categories)) {
+            portalData = parsed;
+            loadedFromLocal = true;
+          }
+        }
+      } catch (e) {}
+
+      if (!loadedFromLocal) {
+        try {
+          const res = await fetch('./games-config.json', { cache: 'no-store' });
+          if (res.ok) {
+            const externalJson = await res.json();
+            if (externalJson && Array.isArray(externalJson.games) && Array.isArray(externalJson.categories)) {
+              portalData = externalJson;
+            }
+          }
+        } catch (e) {
+          // ไม่มีไฟล์ games-config.json ภายนอก ให้ใช้ค่าเริ่มต้นต่อไป
+        }
+      }
+
+      renderCategoryTabs();
+      renderGames();
+    }
+
+    function getCategoryLabel(catId) {
+      const found = portalData.categories.find(c => c.id === catId);
+      if (!found) return "ทั่วไป";
+      // ตัดอีโมจิด้านหน้าออกสำหรับแสดงในป้าย badge บนการ์ด
+      return found.label.replace(/^[^\u0E00-\u0E7Fa-zA-Z0-9]+\s*/, '') || found.label;
+    }
+
+    // วาดปุ่มเลือกหมวดหมู่ด้านบน
+    function renderCategoryTabs() {
+      const wrap = document.getElementById('categoryTabs');
+      wrap.innerHTML = '';
+
+      const allBtn = document.createElement('button');
+      allBtn.className = `tab-btn ${activeCategory === 'all' ? 'active' : ''}`;
+      allBtn.textContent = `🌟 ทั้งหมด (${portalData.games.length})`;
+      allBtn.onclick = () => {
+        activeCategory = 'all';
+        renderCategoryTabs();
         renderGames();
+      };
+      wrap.appendChild(allBtn);
+
+      portalData.categories.forEach(cat => {
+        const count = portalData.games.filter(g => g.category === cat.id).length;
+        const btn = document.createElement('button');
+        btn.className = `tab-btn ${activeCategory === cat.id ? 'active' : ''}`;
+        btn.textContent = `${cat.label} (${count})`;
+        btn.onclick = () => {
+          activeCategory = cat.id;
+          renderCategoryTabs();
+          renderGames();
+        };
+        wrap.appendChild(btn);
       });
-    });
+    }
 
     // วาดการ์ดเกมทั้งหมดลงหน้าจอ
     function renderGames() {
@@ -360,16 +679,19 @@
       const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
       grid.innerHTML = '';
 
-      const filtered = gamesList.filter(g => {
-        const matchCat = activeCategory === 'all' || g.category === activeCategory;
-        const matchText = g.title.toLowerCase().includes(keyword) ||
-                          g.desc.toLowerCase().includes(keyword) ||
-                          g.grade.toLowerCase().includes(keyword);
-        return matchCat && matchText;
-      });
+      const filtered = portalData.games
+        .map((g, originalIndex) => ({ ...g, originalIndex }))
+        .filter(g => {
+          const matchCat = activeCategory === 'all' || g.category === activeCategory;
+          const matchText = (g.title || '').toLowerCase().includes(keyword) ||
+                            (g.desc || '').toLowerCase().includes(keyword) ||
+                            (g.grade || '').toLowerCase().includes(keyword) ||
+                            (g.sensor || '').toLowerCase().includes(keyword);
+          return matchCat && matchText;
+        });
 
       if (filtered.length === 0) {
-        grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:40px; color:#94a3b8; font-size:18px;">ไม่พบเกมที่ค้นหา ลองเลือกหมวดหมู่ "ทั้งหมด" ดูนะครับ</div>`;
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:40px; color:#94a3b8; font-size:18px;">ไม่พบเกมที่ค้นหา ลองเลือกหมวดหมู่ "ทั้งหมด" หรือกด "⚙️ จัดการรายการเกม" เพื่อเพิ่มเกมใหม่ครับ</div>`;
         return;
       }
 
@@ -379,28 +701,291 @@
         card.innerHTML = `
           <div>
             <div class="card-top">
-              <div class="game-icon">${game.icon}</div>
+              <div class="game-icon">${escapeHTML(game.icon || '🎮')}</div>
               <div class="badges">
-                <span class="badge-cat">${game.categoryLabel}</span>
-                <span class="badge-sensor">${game.sensor}</span>
+                <span class="badge-cat">${escapeHTML(getCategoryLabel(game.category))}</span>
+                <span class="badge-sensor">${escapeHTML(game.sensor || '📷 กล้อง AI')}</span>
               </div>
             </div>
-            <h2 class="game-title">${game.title}</h2>
-            <p class="game-desc">${game.desc}</p>
+            <h2 class="game-title">${escapeHTML(game.title)}</h2>
+            <p class="game-desc">${escapeHTML(game.desc)}</p>
           </div>
           <div class="card-footer">
-            <span class="grade-tag">🎯 ${game.grade}</span>
-            ${game.ready
-              ? `<a href="${game.file}" target="_blank" class="btn-play">▶ เข้าเล่นเกม</a>`
-              : `<span class="btn-play coming-soon">⏳ เร็วๆ นี้</span>`
-            }
+            <span class="grade-tag">🎯 ${escapeHTML(game.grade || 'ทุกระดับชั้น')}</span>
+            <div class="card-actions">
+              <button type="button" class="btn-quick-edit" title="แก้ไขข้อมูลเกมนี้" onclick="openManagerModal(${game.originalIndex})">✏️ แก้ไข</button>
+              ${game.ready
+                ? `<a href="${escapeAttr(game.file)}" target="_blank" class="btn-play">▶ เข้าเล่นเกม</a>`
+                : `<span class="btn-play coming-soon">⏳ เร็วๆ นี้</span>`
+              }
+            </div>
           </div>
         `;
         grid.appendChild(card);
       });
     }
 
-    renderGames();
+    function escapeHTML(str) {
+      return String(str || '')
+        .replace(/&/g, '&')
+        .replace(/</g, '<')
+        .replace(/>/g, '>');
+    }
+
+    function escapeAttr(str) {
+      return String(str || '').replace(/"/g, '"');
+    }
+
+    // =========================================================================
+    // ระบบหน้าต่างจัดการรายการเกมและหมวดหมู่ (Manager Modal)
+    // =========================================================================
+    function openManagerModal(focusGameIdx = null) {
+      draftData = JSON.parse(JSON.stringify(portalData));
+      renderCategoryEditor();
+      renderGamesEditorList(focusGameIdx);
+      document.getElementById('managerModal').style.display = 'flex';
+
+      if (focusGameIdx !== null) {
+        setTimeout(() => {
+          const targetCard = document.getElementById(`editGameCard_${focusGameIdx}`);
+          if (targetCard) targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+    }
+
+    function closeManagerModal(save) {
+      if (save) {
+        // ตรวจสอบความครบถ้วน
+        for (let i = 0; i < draftData.categories.length; i++) {
+          if (!draftData.categories[i].label.trim()) {
+            alert(`กรุณากรอกชื่อหมวดหมู่ที่ ${i + 1} ให้ครบครับ`);
+            return;
+          }
+        }
+        for (let i = 0; i < draftData.games.length; i++) {
+          const g = draftData.games[i];
+          if (!g.title.trim()) {
+            alert(`กรุณากรอกชื่อเกมในรายการที่ ${i + 1} ให้ครบครับ`);
+            return;
+          }
+          if (g.ready && !g.file.trim()) {
+            alert(`กรุณากรอกชื่อไฟล์ .html หรือลิงก์ URL ของเกม "${g.title}" ครับ`);
+            return;
+          }
+        }
+
+        portalData = JSON.parse(JSON.stringify(draftData));
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(portalData));
+        } catch (e) {}
+
+        if (activeCategory !== 'all' && !portalData.categories.some(c => c.id === activeCategory)) {
+          activeCategory = 'all';
+        }
+        renderCategoryTabs();
+        renderGames();
+      }
+      document.getElementById('managerModal').style.display = 'none';
+    }
+
+    function renderCategoryEditor() {
+      const wrap = document.getElementById('categoryEditorWrap');
+      wrap.innerHTML = '';
+
+      draftData.categories.forEach((cat, idx) => {
+        const chip = document.createElement('div');
+        chip.className = 'cat-chip';
+
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.value = cat.label;
+        inp.placeholder = 'ชื่อหมวดหมู่';
+        inp.oninput = (e) => {
+          draftData.categories[idx].label = e.target.value;
+          renderGamesEditorList();
+        };
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.textContent = '✕';
+        delBtn.title = 'ลบหมวดหมู่นี้';
+        delBtn.onclick = () => {
+          if (draftData.categories.length <= 1) {
+            alert("ต้องมีหมวดหมู่อย่างน้อย 1 หมวดหมู่ครับ");
+            return;
+          }
+          const removedId = draftData.categories[idx].id;
+          draftData.categories.splice(idx, 1);
+          const fallbackId = draftData.categories[0].id;
+          draftData.games.forEach(g => {
+            if (g.category === removedId) g.category = fallbackId;
+          });
+          renderCategoryEditor();
+          renderGamesEditorList();
+        };
+
+        chip.append(inp, delBtn);
+        wrap.appendChild(chip);
+      });
+    }
+
+    function addNewCategory() {
+      const newId = 'cat_' + Date.now();
+      draftData.categories.push({ id: newId, label: '📚 หมวดหมู่ใหม่' });
+      renderCategoryEditor();
+      renderGamesEditorList();
+    }
+
+    function renderGamesEditorList(highlightIdx = null) {
+      const container = document.getElementById('gamesEditorList');
+      container.innerHTML = '';
+      document.getElementById('draftGameCount').textContent = draftData.games.length;
+
+      draftData.games.forEach((game, idx) => {
+        const item = document.createElement('div');
+        item.className = `game-edit-item ${highlightIdx === idx ? 'highlight' : ''}`;
+        item.id = `editGameCard_${idx}`;
+
+        // สร้างตัวเลือกหมวดหมู่
+        const catOptions = draftData.categories.map(c =>
+          `<option value="${escapeAttr(c.id)}" ${game.category === c.id ? 'selected' : ''}>${escapeHTML(c.label)}</option>`
+        ).join('');
+
+        item.innerHTML = `
+          <div class="edit-item-head">
+            <span style="font-weight:800; color:#38bdf8; font-size:14px;">เกมที่ ${idx + 1}</span>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="btn-sm" style="background:#334155;" onclick="moveGameItem(${idx}, -1)" ${idx === 0 ? 'disabled' : ''}>⬆️ เลื่อนขึ้น</button>
+              <button type="button" class="btn-sm" style="background:#334155;" onclick="moveGameItem(${idx}, 1)" ${idx === draftData.games.length - 1 ? 'disabled' : ''}>⬇️ เลื่อนลง</button>
+              <button type="button" class="btn-sm" style="background:#ef4444;" onclick="deleteGameItem(${idx})">🗑️ ลบเกมนี้</button>
+            </div>
+          </div>
+
+          <div class="edit-grid">
+            <div class="field-group">
+              <label>ไอคอน</label>
+              <input type="text" value="${escapeAttr(game.icon)}" style="text-align:center; font-size:18px;" oninput="draftData.games[${idx}].icon = this.value">
+            </div>
+            <div class="field-group">
+              <label>ชื่อเกม</label>
+              <input type="text" value="${escapeAttr(game.title)}" placeholder="เช่น เกมทายคำศัพท์" oninput="draftData.games[${idx}].title = this.value">
+            </div>
+            <div class="field-group">
+              <label>หมวดหมู่</label>
+              <select onchange="draftData.games[${idx}].category = this.value">${catOptions}</select>
+            </div>
+            <div class="field-group">
+              <label>ระดับชั้น</label>
+              <input type="text" value="${escapeAttr(game.grade)}" placeholder="เช่น ชั้น ป.3" oninput="draftData.games[${idx}].grade = this.value">
+            </div>
+          </div>
+
+          <div class="edit-grid-2">
+            <div class="field-group">
+              <label>ชื่อไฟล์เกม (.html) หรือ ลิงก์ URL</label>
+              <input type="text" value="${escapeAttr(game.file)}" placeholder="เช่น my-game.html หรือ https://..." oninput="draftData.games[${idx}].file = this.value">
+            </div>
+            <div class="field-group">
+              <label>อุปกรณ์ควบคุม / เซนเซอร์</label>
+              <input type="text" value="${escapeAttr(game.sensor)}" placeholder="เช่น 📷 กล้อง AI (จับมือ)" oninput="draftData.games[${idx}].sensor = this.value">
+            </div>
+            <div class="field-group">
+              <label>สถานะการเปิดใช้งาน</label>
+              <select onchange="draftData.games[${idx}].ready = (this.value === 'true')">
+                <option value="true" ${game.ready ? 'selected' : ''}>✅ พร้อมเล่น</option>
+                <option value="false" ${!game.ready ? 'selected' : ''}>⏳ เร็วๆ นี้</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>คำอธิบายเกมสั้นๆ</label>
+            <input type="text" value="${escapeAttr(game.desc)}" placeholder="อธิบายกติกาหรือจุดเด่นของเกม..." oninput="draftData.games[${idx}].desc = this.value">
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function addNewGameItem() {
+      const defaultCat = draftData.categories[0] ? draftData.categories[0].id : 'english';
+      draftData.games.push({
+        title: "เกมใหม่",
+        desc: "คำอธิบายวิธีการเล่นเกมหน้าชั้นเรียน",
+        icon: "🎮",
+        category: defaultCat,
+        sensor: "📷 กล้อง AI",
+        grade: "ทุกระดับชั้น",
+        file: "new-game.html",
+        ready: true
+      });
+      renderGamesEditorList(draftData.games.length - 1);
+      setTimeout(() => {
+        const lastCard = document.getElementById(`editGameCard_${draftData.games.length - 1}`);
+        if (lastCard) lastCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 80);
+    }
+
+    function deleteGameItem(idx) {
+      if (!confirm(`ต้องการลบเกม "${draftData.games[idx].title}" ออกจากรายการใช่หรือไม่?`)) return;
+      draftData.games.splice(idx, 1);
+      renderGamesEditorList();
+    }
+
+    function moveGameItem(idx, dir) {
+      const target = idx + dir;
+      if (target < 0 || target >= draftData.games.length) return;
+      const temp = draftData.games[idx];
+      draftData.games[idx] = draftData.games[target];
+      draftData.games[target] = temp;
+      renderGamesEditorList(target);
+    }
+
+    function resetPortalConfig() {
+      if (confirm("ต้องการล้างค่าที่แก้ไขเองและคืนค่าเริ่มต้นทั้งหมดหรือไม่?")) {
+        localStorage.removeItem(STORAGE_KEY);
+        draftData = JSON.parse(JSON.stringify(defaultPortalData));
+        renderCategoryEditor();
+        renderGamesEditorList();
+      }
+    }
+
+    function exportPortalConfig() {
+      const dataStr = JSON.stringify(draftData, null, 2);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "games-config.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function importPortalConfig(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (!parsed || !Array.isArray(parsed.games) || !Array.isArray(parsed.categories)) {
+            throw new Error("รูปแบบไฟล์ไม่ถูกต้อง");
+          }
+          draftData = parsed;
+          renderCategoryEditor();
+          renderGamesEditorList();
+          alert(`นำเข้าข้อมูลสำเร็จ (${parsed.games.length} เกม) กด '✅ บันทึกการเปลี่ยนแปลง' เพื่อใช้งานครับ`);
+        } catch (err) {
+          alert("ไม่สามารถนำเข้าไฟล์ได้: กรุณาเลือกไฟล์ games-config.json ที่ส่งออกจากหน้านี้เท่านั้น");
+        }
+        event.target.value = '';
+      };
+      reader.readAsText(file);
+    }
+
+    initPortal();
   </script>
 </body>
 </html>
