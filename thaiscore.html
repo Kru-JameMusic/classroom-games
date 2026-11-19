@@ -1,0 +1,2403 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>THAI SCORE : โปรแกรมเขียนโน้ตเพลงไทยพร้อมแปลงเป็นโน้ตสากล</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @font-face {
+      font-family: 'Bravura';
+      src: local('Bravura'),
+           url('./fonts/Bravura.woff2') format('woff2'),
+           url('./fonts/Bravura.otf') format('opentype');
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'ThaiScoreFont';
+      src: local('Sarabun'),
+           url('./fonts/Sarabun-Regular.woff2') format('woff2'),
+           url('./fonts/Sarabun-Regular.ttf') format('truetype');
+      font-display: swap;
+    }
+
+    :root {
+      --bg-cream: #f6f3ea;
+      --panel-cream: #fcfaf4;
+      --border-warm: #e2dac6;
+      --amber-btn: #f59e0b;
+      --text-main: #292524;
+    }
+
+    body {
+      font-family: 'ThaiScoreFont', 'Sarabun', 'Segoe UI', Tahoma, sans-serif;
+      background-color: var(--bg-cream);
+      color: var(--text-main);
+      user-select: none;
+      overflow: hidden;
+    }
+
+    .ts-btn {
+      background: #ffffff;
+      border: 1px solid #d6ceb8;
+      border-radius: 10px;
+      padding: 5px 11px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #44403c;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    }
+    .ts-btn:hover {
+      background: #fffbeb;
+      border-color: #f59e0b;
+      color: #92400e;
+      transform: translateY(-0.5px);
+    }
+    .ts-btn.active {
+      background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+      border-color: #d97706;
+      color: #1c1917;
+      font-weight: 700;
+      box-shadow: 0 2px 4px rgba(245, 158, 11, 0.25);
+    }
+
+    /* ตารางโน้ตไทย */
+    .tn-system-block {
+      margin-bottom: 20px;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 16px 10px 8px 10px;
+      border: 1px solid #e7e0ce;
+      box-shadow: 0 2px 6px rgba(120, 113, 108, 0.05);
+    }
+    .tn-row-grid {
+      display: grid;
+      grid-template-columns: 42px repeat(8, 1fr);
+      border-top: 1px solid #d6cfc0;
+      border-bottom: 1px solid #d6cfc0;
+      background: #ffffff;
+    }
+    .tn-row-grid + .tn-row-grid { border-top: none; }
+    .tn-hand-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: #92400e;
+      background: #fef9ec;
+      border-right: 1px solid #d6cfc0;
+    }
+    .tn-hong {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-right: 1.5px solid #a8a29e;
+      position: relative;
+    }
+    .tn-hong:last-child { border-right: none; }
+
+    .tn-hong-header {
+      position: absolute;
+      top: -16px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 4px;
+      font-size: 10px;
+      pointer-events: none;
+    }
+    .tn-hong-num { color: #a8a29e; font-weight: 700; }
+    .tn-ching-tag { color: #0284c7; font-weight: 800; }
+    .tn-chap-tag { color: #dc2626; font-weight: 800; }
+
+    .tn-cell {
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      position: relative;
+      border-right: 1px dotted #ebe5d5;
+      transition: background-color 0.08s;
+    }
+    .tn-cell:last-child { border-right: none; }
+    .tn-cell:hover { background-color: #fef3c7; }
+
+    .tn-cell.in-range {
+      background-color: #e0f2fe !important;
+      color: #0369a1;
+    }
+    .tn-cell.selected {
+      background-color: #fde68a !important;
+      outline: 2px solid #d97706;
+      outline-offset: -2px;
+      border-radius: 4px;
+      z-index: 5;
+    }
+    .tn-cell.playing {
+      background-color: #6ee7b7 !important;
+      outline: 2px solid #059669;
+      outline-offset: -2px;
+      border-radius: 4px;
+      z-index: 6;
+    }
+    .tn-cell.lueam {
+      background-color: #fff1f2;
+      color: #be123c;
+    }
+    .tn-sabat-text {
+      font-size: 11px;
+      letter-spacing: -0.6px;
+    }
+
+    .note-pad-btn {
+      height: 32px;
+      border-radius: 8px;
+      background: #ffffff;
+      border: 1px solid #dcd3bc;
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.12s;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
+    }
+    .note-pad-btn:hover {
+      background: #fef3c7;
+      border-color: #f59e0b;
+      transform: translateY(-1px);
+    }
+    .note-pad-btn:active {
+      transform: translateY(0px);
+    }
+
+    /* โหมดนำเสนอ (Presentation Mode) */
+    body.presentation-mode header,
+    body.presentation-mode aside,
+    body.presentation-mode footer,
+    body.presentation-mode .hide-in-present {
+      display: none !important;
+    }
+    body.presentation-mode #presentFloatingBar {
+      display: flex !important;
+    }
+
+    /* คลาสควบคุมการพิมพ์ / ส่งออก */
+    body.print-only-thai #westernPane { display: none !important; }
+    body.print-only-western #thaiPane { display: none !important; }
+    body.print-blank-sheet .tn-cell,
+    body.print-blank-sheet .tn-cell span {
+      color: transparent !important;
+    }
+    body.print-blank-sheet .western-note-elem {
+      display: none !important;
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f2ede0; border-radius: 99px; }
+    ::-webkit-scrollbar-thumb { background: #cfc5ae; border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: #b5a98e; }
+
+    @media print {
+      body { background: #fff !important; overflow: visible !important; }
+      .no-print, #presentFloatingBar { display: none !important; }
+      #mainWorkspace { display: block !important; height: auto !important; }
+      #thaiPane, #westernPane {
+        height: auto !important;
+        overflow: visible !important;
+        border: none !important;
+      }
+      #thaiSheetWrapper, #westernSheetWrapper {
+        zoom: 1 !important;
+        width: 100% !important;
+      }
+      .tn-cell.selected, .tn-cell.in-range, .tn-cell.playing {
+        background: transparent !important;
+        outline: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="h-screen flex flex-col">
+
+  <!-- =========================================================
+       1. แถบเครื่องมือด้านบน (Top Header Bar)
+       ========================================================= -->
+  <header class="no-print bg-gradient-to-r from-[#f5f0e1] via-[#f9f6ec] to-[#f5f0e1] border-b border-[#dfd7c2] px-4 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0 shadow-2xs">
+    <div class="flex flex-wrap items-center gap-2">
+      <!-- โลโก้โปรแกรม -->
+      <div class="flex items-center gap-2 pr-2 border-r border-[#dcd3bc]">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-white font-black flex items-center justify-center shadow-sm text-sm">
+          ไทย
+        </div>
+        <div class="leading-tight">
+          <div class="font-black text-xs text-stone-800 tracking-wide">THAI SCORE</div>
+          <div class="text-[10px] text-amber-800 font-semibold">โน้ตไทย • โน้ตสากล</div>
+        </div>
+      </div>
+
+      <button onclick="resetToNew()" class="ts-btn" title="ล้างหน้ากระดาษเพื่อเริ่มเพลงใหม่">📄 เพลงใหม่</button>
+      <input id="songTitleInput" type="text" value="ลาวเฉียง สองชั้น" class="bg-white/80 font-extrabold text-sm text-stone-800 px-3 py-1 rounded-xl hover:bg-white focus:bg-white focus:outline-none border border-[#dcd3bc] focus:border-amber-500 w-40 shadow-2xs" />
+
+      <select id="presetSelect" onchange="loadPresetSong(this.value)" class="ts-btn bg-white border-stone-300 text-stone-700" title="เลือกเพลงตัวอย่าง">
+        <option value="lao_chiang">📂 เพลง: ลาวเฉียง สองชั้น</option>
+        <option value="lao_duang_duen">📂 เพลง: ลาวดวงเดือน</option>
+        <option value="khaek_borathet">📂 เพลง: แขกบรเทศ</option>
+      </select>
+
+      <select id="trackModeSelect" onchange="changeTrackMode(this.value)" class="ts-btn bg-amber-50 border-amber-300 text-amber-950">
+        <option value="double">2 บรรทัด (ขวา - ซ้าย)</option>
+        <option value="single">1 บรรทัด (ทำนองเดี่ยว)</option>
+      </select>
+
+      <select id="instrumentSelect" onchange="previewInstrumentChange()" class="ts-btn bg-white border-stone-300 text-stone-800">
+        <option value="khong">🎹 ฆ้องวงใหญ่ (เสียงแท้ + Synth)</option>
+        <option value="ranad_ek">🥢 ระนาดเอก (ไม้แข็ง)</option>
+        <option value="ranad_thum">🪵 ระนาดทุ้ม (ไม้นวม)</option>
+        <option value="khlui">🪈 ขลุ่ยเพียงออ</option>
+        <option value="saw_duang">🎻 ซอด้วง</option>
+        <option value="piano">🎼 เปียโน / เมโลเดียน</option>
+      </select>
+    </div>
+
+    <!-- Undo / Redo / เมนูส่งออก / นำเข้า JSON & MIDI / นำเสนอ -->
+    <div class="flex items-center gap-1.5 relative">
+      <button onclick="undoAction()" class="ts-btn" title="ย้อนกลับ (Ctrl+Z)">↺</button>
+      <button onclick="redoAction()" class="ts-btn" title="ทำซ้ำ (Ctrl+Y)">↻</button>
+
+      <!-- Dropdown เมนูส่งออก -->
+      <div class="relative">
+        <button onclick="toggleExportMenu()" class="ts-btn bg-white font-bold">⤓ ส่งออก / พิมพ์ ▾</button>
+        <div id="exportDropdown" class="hidden absolute right-0 mt-1.5 w-64 bg-white border border-[#dcd3bc] rounded-2xl shadow-xl py-2 z-50 text-xs">
+          <div class="px-3.5 py-1 text-[10px] font-bold text-stone-400 uppercase">พิมพ์ / บันทึก PDF</div>
+          <button onclick="printWithOptions('both', false)" class="w-full text-left px-3.5 py-1.5 hover:bg-amber-50 flex items-center gap-2 font-semibold">
+            <span>🖨️</span> พิมพ์รวมทั้ง ไทย + สากล
+          </button>
+          <button onclick="printWithOptions('thai', false)" class="w-full text-left px-3.5 py-1.5 hover:bg-amber-50 flex items-center gap-2 font-semibold">
+            <span>📄</span> พิมพ์เฉพาะ โน้ตไทยอย่างเดียว
+          </button>
+          <button onclick="printWithOptions('western', false)" class="w-full text-left px-3.5 py-1.5 hover:bg-amber-50 flex items-center gap-2 font-semibold">
+            <span>🎼</span> พิมพ์เฉพาะ โน้ตสากลอย่างเดียว
+          </button>
+
+          <div class="border-t border-stone-100 my-1.5"></div>
+          <div class="px-3.5 py-1 text-[10px] font-bold text-emerald-600 uppercase">ใบงานกระดาษเปล่า (ฝึกเขียน)</div>
+          <button onclick="printWithOptions('both', true)" class="w-full text-left px-3.5 py-1.5 hover:bg-emerald-50 flex items-center gap-2 font-semibold text-emerald-800">
+            <span>📝</span> กระดาษเปล่า (รวม ไทย + สากล)
+          </button>
+          <button onclick="printWithOptions('thai', true)" class="w-full text-left px-3.5 py-1.5 hover:bg-emerald-50 flex items-center gap-2 font-semibold text-emerald-800">
+            <span>📝</span> กระดาษเปล่า (เฉพาะโน้ตไทย)
+          </button>
+          <button onclick="printWithOptions('western', true)" class="w-full text-left px-3.5 py-1.5 hover:bg-emerald-50 flex items-center gap-2 font-semibold text-emerald-800">
+            <span>📝</span> กระดาษเปล่า (เฉพาะโน้ตสากล)
+          </button>
+
+          <div class="border-t border-stone-100 my-1.5"></div>
+          <div class="px-3.5 py-1 text-[10px] font-bold text-stone-400 uppercase">ไฟล์ข้อมูลและเสียง</div>
+          <button onclick="exportJSON(); toggleExportMenu()" class="w-full text-left px-3.5 py-1.5 hover:bg-amber-50 flex items-center gap-2 font-semibold">
+            <span>💾</span> บันทึกไฟล์โปรเจกต์ (.json)
+          </button>
+          <button onclick="exportMIDI(); toggleExportMenu()" class="w-full text-left px-3.5 py-1.5 hover:bg-amber-50 flex items-center gap-2 font-semibold text-indigo-700">
+            <span>🎹</span> ส่งออกไฟล์เสียง MIDI (.mid)
+          </button>
+        </div>
+      </div>
+
+      <!-- นำเข้าทั้ง JSON และ MIDI (ข้อ 2) -->
+      <button onclick="document.getElementById('importFile').click()" class="ts-btn bg-emerald-50/80 border-emerald-300 text-emerald-900 hover:bg-emerald-100" title="นำเข้าไฟล์โปรเจกต์ .json หรือไฟล์เสียง .mid เพื่อแปลงเป็นโน้ตไทย">
+        ⤒ นำเข้า (JSON / MIDI)
+      </button>
+      <input id="importFile" type="file" accept=".json,.mid,.midi" class="hidden" onchange="handleImportFile(event)" />
+
+      <button onclick="togglePresentationMode(true)" class="ts-btn bg-indigo-50 border-indigo-200 text-indigo-800 hover:bg-indigo-100">
+        🖥️ นำเสนอ
+      </button>
+    </div>
+
+    <!-- มุมมองหน้าจอ -->
+    <div class="flex items-center bg-[#e8e1ce] p-1 rounded-xl border border-[#d6ceb8] text-xs">
+      <button id="viewThaiBtn" onclick="setViewMode('thai')" class="px-2.5 py-1 rounded-lg font-semibold text-stone-600 hover:text-stone-900 transition">กระดาษไทยเต็มจอ</button>
+      <button id="viewSplitBtn" onclick="setViewMode('split')" class="px-2.5 py-1 rounded-lg font-bold bg-amber-400 text-stone-950 shadow-2xs transition">แบ่งครึ่ง</button>
+      <button id="viewWesternBtn" onclick="setViewMode('western')" class="px-2.5 py-1 rounded-lg font-semibold text-stone-600 hover:text-stone-900 transition">โน้ตสากลเต็มจอ</button>
+    </div>
+  </header>
+
+  <!-- แถบควบคุมลอยตัวสำหรับโหมดนำเสนอ -->
+  <div id="presentFloatingBar" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 bg-stone-900/90 text-white px-5 py-2.5 rounded-full shadow-2xl items-center gap-3 z-50 text-xs backdrop-blur-md">
+    <span class="font-bold text-amber-400">🖥️ โหมดนำเสนอ</span>
+    <button onclick="togglePlay()" class="bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold px-3.5 py-1 rounded-full">▶ เล่น / หยุด (Space)</button>
+    <div class="flex items-center gap-1">
+      <button onclick="changeThaiZoom(-10)" class="w-6 h-6 rounded-full bg-stone-700 font-bold">-</button>
+      <span id="presentZoomLabel" class="w-10 text-center font-bold">100%</span>
+      <button onclick="changeThaiZoom(10)" class="w-6 h-6 rounded-full bg-stone-700 font-bold">+</button>
+    </div>
+    <button onclick="togglePresentationMode(false)" class="bg-rose-600 hover:bg-rose-500 px-3.5 py-1 rounded-full font-bold">✕ ออก (ESC)</button>
+  </div>
+
+  <!-- =========================================================
+       2. พื้นที่ทำงานหลัก
+       ========================================================= -->
+  <div id="mainWorkspace" class="flex-1 flex overflow-hidden">
+
+    <!-- ฝั่งซ้าย: กระดาษโน้ตไทย (บน) และ โน้ตสากล (ล่าง) -->
+    <div class="flex-1 flex flex-col overflow-hidden bg-[#fcfaf4]">
+
+      <!-- ส่วนบน: กระดาษโน้ตไทย -->
+      <section id="thaiPane" class="flex-1 flex flex-col overflow-hidden border-b-2 border-[#dfd7c2]">
+        <div class="no-print hide-in-present px-4 py-1.5 bg-[#f7f3e6] border-b border-[#e6dec8] flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
+          <div class="flex items-center gap-2">
+            <span class="font-extrabold text-stone-800">📜 กระดาษโน้ตไทย</span>
+            <span id="songMetaBadge" class="text-stone-500 bg-white px-2 py-0.5 rounded-full border border-[#e2dac6] text-[11px]">24 ห้อง • 4 ช่อง/ห้อง</span>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button onclick="addMeasureRow()" class="ts-btn text-[11px] py-1 bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100">
+              + เพิ่มบรรทัด (8 ห้อง)
+            </button>
+            <button onclick="removeMeasureRow()" class="ts-btn text-[11px] py-1 bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100">
+              - ลบบรรทัดล่างสุด
+            </button>
+
+            <div class="h-4 w-[1px] bg-stone-300 mx-1"></div>
+
+            <!-- ซูมกระดาษไทยตรงกลาง (ข้อ 4) -->
+            <div class="flex items-center gap-1 text-stone-700 bg-white px-2 py-0.5 rounded-lg border border-[#d6ceb8]">
+              <span>ขยาย</span>
+              <button onclick="changeThaiZoom(-10)" class="w-5 h-5 rounded bg-stone-100 hover:bg-amber-100 font-bold leading-none">-</button>
+              <span id="thaiZoomLabel" class="w-9 text-center font-bold">100%</span>
+              <button onclick="changeThaiZoom(10)" class="w-5 h-5 rounded bg-stone-100 hover:bg-amber-100 font-bold leading-none">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- พื้นที่เลื่อนดูได้รอบด้านและขยายจากกึ่งกลาง (ข้อ 4) -->
+        <div id="thaiScrollArea" class="flex-1 overflow-auto p-5 flex justify-center items-start">
+          <div id="thaiSheetWrapper" class="w-full max-w-[1150px] mx-auto shrink-0">
+            <div class="text-center mb-4">
+              <input id="sectionTitleInput" type="text" value="ท่อน 1 (2 เที่ยว)" class="text-center font-extrabold text-base text-amber-900 bg-white/70 rounded-full border border-transparent hover:border-amber-300 focus:border-amber-500 focus:outline-none px-4 py-1" />
+            </div>
+            <div id="thaiSheetContainer"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ส่วนล่าง: โน้ตสากล -->
+      <section id="westernPane" class="h-[46%] flex flex-col overflow-hidden bg-[#f9f6ec]">
+        <div class="no-print hide-in-present px-4 py-1.5 bg-[#f2ede0] border-b border-[#dfd7c2] flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
+          <div class="flex items-center gap-2">
+            <span class="font-extrabold text-stone-800">🎼 โน้ตสากล</span>
+            <span id="timeSigBadge" class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-extrabold text-[11px] border border-amber-200">อัตราจังหวะ 2/4</span>
+
+            <button id="noteNameToggleBtn" onclick="toggleWesternNoteNames()" class="ts-btn text-[11px] py-0.5" title="แสดงชื่อโน้ตใต้หัวโน้ตสำหรับฝึกอ่าน">
+              🔤 ชื่อโน้ต: ปิด
+            </button>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="flex items-center gap-1 bg-[#e6dec8] p-0.5 rounded-lg">
+              <button id="staffGrandBtn" onclick="setStaffMode('grand')" class="px-2 py-0.5 rounded text-[11px] font-semibold text-stone-600">แกรนด์สตาฟ 2 บรรทัด</button>
+              <button id="staffSingleBtn" onclick="setStaffMode('single')" class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-400 text-stone-950">รวมเป็นบรรทัดเดียว</button>
+            </div>
+
+            <div class="flex items-center gap-1 bg-[#e6dec8] p-0.5 rounded-lg">
+              <span class="px-1 text-[11px] text-stone-600">เส้นกั้นห้อง</span>
+              <button id="barEndBtn" onclick="setBarMode('end')" class="px-2 py-0.5 rounded text-[11px] font-semibold text-stone-600">จังหวะตกท้ายห้อง</button>
+              <button id="barStartBtn" onclick="setBarMode('start')" class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-400 text-stone-950">จังหวะตกต้นห้อง</button>
+            </div>
+
+            <!-- ขยายโน้ตสากลตรงกลาง (ข้อ 4) -->
+            <div class="flex items-center gap-1 text-stone-700 bg-white px-2 py-0.5 rounded-lg border border-[#d6ceb8]">
+              <span>ขยาย</span>
+              <button onclick="changeWesternZoom(-10)" class="w-5 h-5 rounded bg-stone-100 hover:bg-amber-100 font-bold leading-none">-</button>
+              <span id="westernZoomLabel" class="w-9 text-center font-bold">100%</span>
+              <button onclick="changeWesternZoom(10)" class="w-5 h-5 rounded bg-stone-100 hover:bg-amber-100 font-bold leading-none">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- พื้นที่เลื่อนดูได้รอบด้านและขยายจากกึ่งกลาง (ข้อ 4) -->
+        <div id="westernScrollArea" class="flex-1 overflow-auto p-4 flex justify-center items-start">
+          <div id="westernSheetWrapper" class="w-full max-w-[1150px] mx-auto shrink-0">
+            <div id="pickupNotice" class="no-print hide-in-present mb-2.5 px-3.5 py-1.5 rounded-xl bg-[#fef6e4] border border-[#f3d9a4] text-[11px] text-amber-950 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span class="px-2 py-0.5 bg-amber-200/80 text-amber-950 font-bold rounded-md mr-1.5">จังหวะตก</span>
+                <span id="barRuleDesc">จังหวะตกต้นห้อง: โน้ตจังหวะตกของไทย (ช่องที่ 4) จะถูกจัดลงเป็นจังหวะที่ 1 แรกสุดของห้องสากล</span>
+              </div>
+              <span class="text-stone-500">รวมหางโน้ตเขบ็ตอัตโนมัติ</span>
+            </div>
+
+            <div id="westernStaffContainer" class="space-y-3"></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- =========================================================
+         3. แถบเครื่องมือเขียนโน้ตด้านขวา (Right Tool Sidebar)
+         ========================================================= -->
+    <aside class="no-print w-[295px] bg-[#f4efe2] border-l border-[#dfd7c2] flex flex-col overflow-y-auto shrink-0 p-3.5 space-y-3">
+      <div class="flex items-center justify-between border-b border-[#dfd7c2] pb-2.5">
+        <span class="font-extrabold text-xs text-stone-800 flex items-center gap-1.5">
+          <span class="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">✎</span>
+          เครื่องมือเขียนโน้ต
+        </span>
+        <span id="cursorPosLabel" class="text-[11px] font-bold text-amber-900 bg-amber-200/70 px-2.5 py-0.5 rounded-full">ห้อง 1 • ช่อง 1</span>
+      </div>
+
+      <!-- กล่อง 1: ตัวโน้ต -->
+      <div class="bg-[#fcfaf4] border border-[#e4decb] rounded-2xl p-3 space-y-2.5 shadow-2xs">
+        <div class="text-[11px] font-extrabold text-amber-900 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span> แป้นพิมพ์ตัวโน้ต
+        </div>
+
+        <div>
+          <div class="text-[10px] font-semibold text-indigo-700 mb-1">เสียงสูง (มีจุดบน)</div>
+          <div class="grid grid-cols-7 gap-1">
+            <button onclick="insertNote('ด', 1)" class="note-pad-btn text-indigo-700">ดํ</button>
+            <button onclick="insertNote('ร', 1)" class="note-pad-btn text-indigo-700">รํ</button>
+            <button onclick="insertNote('ม', 1)" class="note-pad-btn text-indigo-700">มํ</button>
+            <button onclick="insertNote('ฟ', 1)" class="note-pad-btn text-indigo-700">ฟํ</button>
+            <button onclick="insertNote('ซ', 1)" class="note-pad-btn text-indigo-700">ซํ</button>
+            <button onclick="insertNote('ล', 1)" class="note-pad-btn text-indigo-700">ลํ</button>
+            <button onclick="insertNote('ท', 1)" class="note-pad-btn text-indigo-700">ทํ</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="text-[10px] font-semibold text-stone-600 mb-1">เสียงกลาง (คีย์ลัด C D E F G A B)</div>
+          <div class="grid grid-cols-7 gap-1">
+            <button onclick="insertNote('ด', 0)" class="note-pad-btn">ด</button>
+            <button onclick="insertNote('ร', 0)" class="note-pad-btn">ร</button>
+            <button onclick="insertNote('ม', 0)" class="note-pad-btn">ม</button>
+            <button onclick="insertNote('ฟ', 0)" class="note-pad-btn">ฟ</button>
+            <button onclick="insertNote('ซ', 0)" class="note-pad-btn">ซ</button>
+            <button onclick="insertNote('ล', 0)" class="note-pad-btn">ล</button>
+            <button onclick="insertNote('ท', 0)" class="note-pad-btn">ท</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="text-[10px] font-semibold text-amber-800 mb-1">เสียงต่ำ (มีจุดล่าง)</div>
+          <div class="grid grid-cols-7 gap-1">
+            <button onclick="insertNote('ด', -1)" class="note-pad-btn text-amber-800">ด̣</button>
+            <button onclick="insertNote('ร', -1)" class="note-pad-btn text-amber-800">ร̣</button>
+            <button onclick="insertNote('ม', -1)" class="note-pad-btn text-amber-800">ม̣</button>
+            <button onclick="insertNote('ฟ', -1)" class="note-pad-btn text-amber-800">ฟ̣</button>
+            <button onclick="insertNote('ซ', -1)" class="note-pad-btn text-amber-800">ซ̣</button>
+            <button onclick="insertNote('ล', -1)" class="note-pad-btn text-amber-800">ล̣</button>
+            <button onclick="insertNote('ท', -1)" class="note-pad-btn text-amber-800">ท̣</button>
+          </div>
+        </div>
+
+        <div class="pt-1 flex items-center justify-between gap-1.5">
+          <button onclick="insertNote('-', 0)" class="ts-btn flex-1 justify-center bg-amber-50 border-amber-300 text-amber-950 font-bold">
+            - ขีด (ปุ่ม -)
+          </button>
+          <button onclick="backspaceDeleteNote()" class="ts-btn text-rose-600 border-rose-200 hover:bg-rose-50" title="ลบโน้ตและถอยหลังต่อเนื่อง (Backspace)">
+            ⌫ ลบถอยหลัง
+          </button>
+        </div>
+        <div class="text-[10px] text-stone-500 bg-amber-50/70 p-2 rounded-xl border border-amber-200/60 leading-relaxed">
+          <b>คีย์ลัด:</b> C=ด, D=ร, E=ม, F=ฟ, G=ซ, A=ล, B=ท<br/>
+          • กด <b>ลูกศร ↑ / ↓</b> เพื่อปรับเสียงสูง-ต่ำของตัวโน้ต<br/>
+          • <b>Ctrl+C / Ctrl+V</b> ใช้ได้ทันทีแม้เปิดคีย์บอร์ดไทย
+        </div>
+      </div>
+
+      <!-- กล่อง 2: ช่องที่เลือก / คลุมดำ -->
+      <div class="bg-[#fcfaf4] border border-[#e4decb] rounded-2xl p-3 space-y-2 shadow-2xs">
+        <div class="text-[11px] font-extrabold text-amber-900 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span> จัดการช่องที่เลือก / คลุมดำ
+        </div>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button onclick="shiftSelectedOctave(1)" class="ts-btn justify-center py-1.5">▲ สูงขึ้น (↑)</button>
+          <button onclick="shiftSelectedOctave(-1)" class="ts-btn justify-center py-1.5">▼ ต่ำลง (↓)</button>
+        </div>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button onclick="copySelection()" class="ts-btn justify-center text-[11px]">📋 คัดลอก (Ctrl+C)</button>
+          <button onclick="pasteSelection()" class="ts-btn justify-center text-[11px]">📥 วาง (Ctrl+V)</button>
+        </div>
+      </div>
+
+      <!-- กล่อง 3: ย้ายเสียงทั้งเพลง -->
+      <div class="bg-[#fcfaf4] border border-[#e4decb] rounded-2xl p-3 space-y-2 shadow-2xs">
+        <div class="text-[11px] font-extrabold text-amber-900 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span> ย้ายเสียงทั้งเพลง (Transpose)
+        </div>
+
+        <div>
+          <div class="text-[10px] text-stone-500 mb-1">1. เปลี่ยนตัวโน้ตบนกระดาษใหม่ทั้งหมด:</div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button onclick="transposeSongScale(1)" class="ts-btn justify-center text-[11px] bg-indigo-50/70 border-indigo-200 text-indigo-900">
+              ▲ เลื่อนโน้ต +1
+            </button>
+            <button onclick="transposeSongScale(-1)" class="ts-btn justify-center text-[11px] bg-indigo-50/70 border-indigo-200 text-indigo-900">
+              ▼ เลื่อนโน้ต -1
+            </button>
+          </div>
+        </div>
+
+        <div class="pt-1.5 border-t border-stone-200/70">
+          <div class="flex items-center justify-between text-[10px] text-stone-500 mb-1">
+            <span>2. เปลี่ยนคีย์เครื่องดนตรี / เสียงเล่น:</span>
+            <span id="pitchShiftVal" class="font-bold text-amber-800">คีย์ C (0)</span>
+          </div>
+          <select id="transposingInstSelect" onchange="setAudioKeyPreset(this.value)" class="w-full ts-btn text-[11px] justify-between bg-white">
+            <option value="0">คีย์ C (ระดับเสียงสากล / เมโลเดียน)</option>
+            <option value="-2">คีย์ Bb (ทรัมเป็ต / คลาริเน็ต -2)</option>
+            <option value="-9">คีย์ Eb (อัลโตแซกโซโฟน +3/-9)</option>
+            <option value="-7">คีย์ F (ฮอร์น / ทางใน -7)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- กล่อง 4: วิธีใส่ -->
+      <div class="bg-[#fcfaf4] border border-[#e4decb] rounded-2xl p-3 space-y-2 shadow-2xs">
+        <div class="text-[11px] font-extrabold text-amber-900 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span> วิธีใส่โน้ตพิเศษ
+        </div>
+
+        <label class="flex items-center justify-between bg-white p-2.5 rounded-xl border border-[#e4decb] cursor-pointer hover:border-amber-400 transition">
+          <div>
+            <div class="text-[11px] font-bold text-stone-800">สะบัด - ใส่หลายตัวในช่องเดียว</div>
+            <div class="text-[9px] text-stone-400">เล่นรัวเร็วให้ทันใน 1 จังหวะ</div>
+          </div>
+          <input id="sabatToggle" type="checkbox" class="w-4 h-4 accent-amber-500 cursor-pointer" />
+        </label>
+
+        <div class="grid grid-cols-2 gap-1.5">
+          <button id="btnLueam" onclick="setTimingType('lueam')" class="ts-btn justify-center text-[11px]">• ตีเหลื่อม</button>
+          <button id="btnStraight" onclick="setTimingType('straight')" class="ts-btn active justify-center text-[11px]">ลงตรงจังหวะ</button>
+        </div>
+      </div>
+
+    </aside>
+  </div>
+
+  <!-- =========================================================
+       4. แถบควบคุมการเล่นด้านล่างสุด (Bottom Playback Bar)
+       ========================================================= -->
+  <footer class="no-print bg-[#f2ede0] border-t border-[#dfd7c2] px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
+    <div class="flex flex-wrap items-center gap-2">
+      <button id="btnPlay" onclick="togglePlay()" class="bg-gradient-to-b from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 font-extrabold px-4 py-1.5 rounded-xl border border-amber-600 flex items-center gap-1.5 shadow-xs transition cursor-pointer">
+        <span>▶</span> เล่น
+      </button>
+      <button onclick="stopPlay()" class="ts-btn py-1.5 px-3">■ หยุด</button>
+
+      <div class="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-xl border border-[#d6ceb8]">
+        <span class="text-stone-500">เริ่มห้องที่</span>
+        <input id="startMeasureInput" type="number" value="1" min="1" max="100" class="w-10 text-center font-extrabold text-amber-800 bg-amber-50 rounded py-0.5 border border-amber-200 focus:outline-none" />
+      </div>
+
+      <div class="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-xl border border-[#d6ceb8]">
+        <span>🔊</span>
+        <input id="volumeSlider" type="range" min="0" max="100" value="85" class="w-14 accent-amber-500 cursor-pointer" />
+      </div>
+
+      <div class="flex items-center gap-1 bg-white px-2.5 py-1 rounded-xl border border-[#d6ceb8]">
+        <span class="text-stone-500">ความเร็ว</span>
+        <button onclick="changeBPM(-5)" class="w-5 h-5 rounded bg-stone-100 hover:bg-amber-100 font-bold">-</button>
+        <input id="bpmInput" type="number" value="65" min="30" max="240" onchange="setBPMDirect(this.value)" class="w-11 text-center font-extrabold text-stone-800 bg-stone-50 rounded py-0.5 focus:outline-none focus:bg-amber-50" />
+        <span class="text-stone-500">BPM</span>
+        <button onclick="changeBPM(5)" class="w-5 h-5 rounded bg-stone-100 hover:bg-amber-100 font-bold">+</button>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-1.5">
+      <button id="melodyMuteBtn" onclick="toggleMelodyAudio()" class="ts-btn active">
+        🎵 เสียงดนตรี เปิด
+      </button>
+
+      <div class="flex items-center gap-1 bg-white px-2.5 py-1 rounded-xl border border-[#d6ceb8]">
+        <span class="text-stone-500">ฉิ่ง:</span>
+        <select id="chingPatternSelect" onchange="changeChingPattern(this.value)" class="font-bold text-amber-900 bg-transparent focus:outline-none cursor-pointer">
+          <option value="2_4">ฉิ่ง-ฉับ (2/4)</option>
+          <option value="4_4">ฉิ่ง-ฉับ (4/4)</option>
+          <option value="3_4">3 จังหวะ (3/4)</option>
+          <option value="none">ปิดเสียงฉิ่ง</option>
+        </select>
+      </div>
+
+      <button id="loopBtn" onclick="toggleLoop()" class="ts-btn active">
+        ↻ ซ้ำท่อน เปิด
+      </button>
+    </div>
+
+    <div class="flex items-center gap-1.5">
+      <span class="text-[11px] text-stone-500 hidden xl:inline">เทียบเสียง</span>
+      <div class="flex items-center bg-[#e6dec8] p-0.5 rounded-xl border border-[#d6ceb8]">
+        <button id="pitchChromaticBtn" onclick="setPitchStandard('chromatic')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-400 text-stone-950">สากล</button>
+        <button id="pitchRoyalBtn" onclick="setPitchStandard('royal')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-stone-600">พระราชทาน</button>
+        <button id="pitchSilpaBtn" onclick="setPitchStandard('silpa')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-stone-600">กรมศิลป์</button>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // =========================================================
+    // 1. ข้อมูลพื้นฐานตัวโน้ตและการตั้งค่า
+    // =========================================================
+    const SCALE_ORDER = ['ด', 'ร', 'ม', 'ฟ', 'ซ', 'ล', 'ท'];
+    const NOTE_INFO = {
+      'ด': { step: 0, midi: 60, file: 'c', eng: 'C' },
+      'ร': { step: 1, midi: 62, file: 'd', eng: 'D' },
+      'ม': { step: 2, midi: 64, file: 'e', eng: 'E' },
+      'ฟ': { step: 3, midi: 65, file: 'f', eng: 'F' },
+      'ซ': { step: 4, midi: 67, file: 'g', eng: 'G' },
+      'ล': { step: 5, midi: 69, file: 'a', eng: 'A' },
+      'ท': { step: 6, midi: 71, file: 'b', eng: 'B' }
+    };
+
+    // คีย์ลัดมาตรฐานตามตำแหน่งปุ่มกายภาพ (KeyCode) ไม่ว่าจะเปิดคีย์บอร์ดไทยหรืออังกฤษ
+    const CODE_TO_THAI = {
+      'KeyC': 'ด',
+      'KeyD': 'ร',
+      'KeyE': 'ม',
+      'KeyF': 'ฟ',
+      'KeyG': 'ซ',
+      'KeyA': 'ล',
+      'KeyB': 'ท'
+    };
+
+    let state = {
+      trackMode: 'double',
+      instrument: 'khong',
+      staffMode: 'single',
+      barMode: 'start',
+      chingPattern: '2_4',
+      pitchStd: 'chromatic',
+      audioSemitoneShift: 0,
+      melodyOn: true,
+      showWesternNoteNames: false,
+      bpm: 65,
+      loopOn: true,
+      thaiZoom: 100,
+      westernZoom: 100,
+      measures: []
+    };
+
+    let cursor = { measure: 0, hand: 'right', cell: 0 };
+    let selectionRange = { startFlat: 0, endFlat: 0, hand: 'right' };
+    let isDragging = false;
+    let clipboardCells = [];
+
+    let historyStack = [];
+    let redoStack = [];
+    let isPlaying = false;
+    let playTimer = null;
+    let playTick = 0;
+
+    // =========================================================
+    // 2. คลังเพลงตัวอย่าง (Presets)
+    // =========================================================
+    function loadPresetSong(presetKey) {
+      const m = Array.from({ length: 24 }, () => ({
+        right: Array.from({ length: 4 }, () => ({ notes: [{ n: '-', o: 0 }], lueam: false })),
+        left: Array.from({ length: 4 }, () => ({ notes: [{ n: '-', o: 0 }], lueam: false }))
+      }));
+
+      const setCells = (mIdx, hand, arr) => {
+        arr.forEach((item, cIdx) => {
+          if (typeof item === 'string') m[mIdx][hand][cIdx].notes = [{ n: item, o: 0 }];
+          else m[mIdx][hand][cIdx].notes = item;
+        });
+      };
+
+      if (presetKey === 'lao_duang_duen') {
+        document.getElementById('songTitleInput').value = 'ลาวดวงเดือน สองชั้น';
+        setCells(0, 'right', ['-', '-', 'ด', 'ร']);
+        setCells(1, 'right', ['ม', 'ซ', 'ล', [{ n: 'ด', o: 1 }]]);
+        setCells(2, 'right', ['-', 'ล', 'ซ', 'ม']);
+        setCells(3, 'right', ['ร', 'ม', 'ซ', '-']);
+        setCells(4, 'right', ['-', 'ล', 'ซ', 'ม']);
+        setCells(5, 'right', ['ร', 'ด', 'ร', 'ม']);
+        setCells(6, 'right', ['-', 'ร', 'ด', [{ n: 'ล', o: -1 }]]);
+        setCells(7, 'right', ['ด', '-', '-', '-']);
+      } else if (presetKey === 'khaek_borathet') {
+        document.getElementById('songTitleInput').value = 'แขกบรเทศ ชั้นเดียว';
+        setCells(0, 'right', ['-', 'ซ', 'ล', [{ n: 'ด', o: 1 }]]);
+        setCells(1, 'right', ['-', [{ n: 'ร', o: 1 }], [{ n: 'ด', o: 1 }], 'ล']);
+        setCells(2, 'right', ['-', 'ซ', 'ม', 'ร']);
+        setCells(3, 'right', ['-', 'ม', 'ซ', 'ล']);
+        setCells(4, 'right', ['-', [{ n: 'ด', o: 1 }], 'ล', 'ซ']);
+        setCells(5, 'right', ['-', 'ม', 'ร', 'ด']);
+        setCells(6, 'right', ['-', 'ร', 'ม', 'ซ']);
+        setCells(7, 'right', ['-', 'ม', 'ร', 'ด']);
+      } else {
+        document.getElementById('songTitleInput').value = 'ลาวเฉียง สองชั้น';
+        setCells(0, 'right', ['-', '-', '-', '-']);
+        setCells(1, 'right', ['-', '-', '-', 'ม']);
+        setCells(2, 'right', ['-', 'ซ', 'ล', [{ n: 'ด', o: 1 }]]);
+        setCells(3, 'right', ['-', 'ซ', '-', 'ล']);
+        setCells(4, 'right', ['-', 'ซ', '-', 'ม']);
+        setCells(5, 'right', ['-', 'ซ', 'ซ', '-']);
+        setCells(6, 'right', ['-', 'ล', 'ล', '-']);
+        setCells(7, 'right', ['-', '-', '-', [{ n: 'ด', o: 1 }]]);
+
+        setCells(1, 'left', ['-', '-', '-', [{ n: 'ท', o: -1 }]]);
+        setCells(2, 'left', ['-', [{ n: 'ล', o: -1 }], '-', 'ด']);
+        setCells(3, 'left', ['-', [{ n: 'ซ', o: -1 }], '-', [{ n: 'ล', o: -1 }]]);
+        setCells(4, 'left', ['-', [{ n: 'ซ', o: -1 }], '-', [{ n: 'ท', o: -1 }]]);
+        setCells(5, 'left', ['-', [{ n: 'ซ', o: -1 }], '-', '-']);
+        setCells(6, 'left', ['-', [{ n: 'ล', o: -1 }], '-', '-']);
+        setCells(7, 'left', ['-', '-', '-', 'ด']);
+
+        for (let i = 0; i < 8; i++) m[8 + i] = JSON.parse(JSON.stringify(m[i]));
+
+        setCells(16, 'right', ['ล', '-', 'ซ', 'ซ']);
+        setCells(17, 'right', ['-', '-', [{ n: 'ด', o: 1 }], [{ n: 'ด', o: 1 }]]);
+        setCells(18, 'right', ['-', [{ n: 'ร', o: 1 }], [{ n: 'ร', o: 1 }], '-']);
+        setCells(19, 'right', ['-', [{ n: 'ม', o: 1 }], '-', [{ n: 'ด', o: 1 }]]);
+        setCells(20, 'right', ['-', [{ n: 'ร', o: 1 }], '-', [{ n: 'ม', o: 1 }]]);
+        setCells(21, 'right', ['-', [{ n: 'ม', o: 1 }], '-', [{ n: 'ม', o: 1 }]]);
+        setCells(22, 'right', ['-', [{ n: 'ม', o: 1 }], '-', [{ n: 'ม', o: 1 }]]);
+        setCells(23, 'right', ['-', [{ n: 'ร', o: 1 }], '-', '-']);
+
+        setCells(16, 'left', [[{ n: 'ล', o: -1 }], '-', [{ n: 'ซ', o: -1 }], '-']);
+        setCells(17, 'left', ['ด', '-', '-', 'ร']);
+        setCells(18, 'left', ['-', '-', '-', 'ม']);
+        setCells(19, 'left', ['-', '-', '-', 'ด']);
+        setCells(20, 'left', ['-', 'ร', '-', 'ม']);
+        setCells(21, 'left', ['-', 'ซ', '-', 'ล']);
+        setCells(22, 'left', ['-', 'ซ', '-', 'ม']);
+        setCells(23, 'left', ['-', 'ร', '-', '-']);
+      }
+
+      state.measures = m;
+      cursor = { measure: 0, hand: 'right', cell: 0 };
+      selectionRange = { startFlat: 0, endFlat: 0, hand: 'right' };
+      document.getElementById('songMetaBadge').textContent = `${state.measures.length} ห้อง • 4 ช่อง/ห้อง`;
+      renderAll();
+    }
+
+    function pushHistory() {
+      historyStack.push(JSON.stringify(state.measures));
+      if (historyStack.length > 35) historyStack.shift();
+      redoStack = [];
+    }
+    function undoAction() {
+      if (!historyStack.length) return;
+      redoStack.push(JSON.stringify(state.measures));
+      state.measures = JSON.parse(historyStack.pop());
+      renderAll();
+    }
+    function redoAction() {
+      if (!redoStack.length) return;
+      historyStack.push(JSON.stringify(state.measures));
+      state.measures = JSON.parse(redoStack.pop());
+      renderAll();
+    }
+
+    // =========================================================
+    // 3. ระบบเสียงแยกเครื่องดนตรี & โฟลเดอร์เทียบเสียง
+    // =========================================================
+    let audioCtx = null;
+    const audioCache = new Map();
+
+    function getAudioCtx() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    async function playAudioFile(candidates) {
+      const ctx = getAudioCtx();
+      const vol = (parseInt(document.getElementById('volumeSlider').value, 10) || 85) / 100;
+      for (const url of candidates) {
+        if (audioCache.has(url)) {
+          const buf = audioCache.get(url);
+          if (!buf) continue;
+          const src = ctx.createBufferSource();
+          const g = ctx.createGain();
+          g.gain.value = vol;
+          src.buffer = buf;
+          src.connect(g);
+          g.connect(ctx.destination);
+          src.start();
+          return true;
+        }
+        try {
+          const res = await fetch(url);
+          if (!res.ok) { audioCache.set(url, null); continue; }
+          const buf = await ctx.decodeAudioData(await res.arrayBuffer());
+          audioCache.set(url, buf);
+          const src = ctx.createBufferSource();
+          const g = ctx.createGain();
+          g.gain.value = vol;
+          src.buffer = buf;
+          src.connect(g);
+          g.connect(ctx.destination);
+          src.start();
+          return true;
+        } catch (e) {
+          audioCache.set(url, null);
+        }
+      }
+      return false;
+    }
+
+    function getPitchDetuneCents() {
+      if (state.pitchStd === 'royal') return -15;
+      if (state.pitchStd === 'silpa') return 25;
+      return 0;
+    }
+
+    async function playSingleNote(noteChar, octave, forcePlay = false) {
+      if (!NOTE_INFO[noteChar]) return;
+      if (!forcePlay && !state.melodyOn) return;
+
+      const inst = state.instrument;
+      const stdFolder = state.pitchStd;
+      const midi = NOTE_INFO[noteChar].midi + (octave * 12) + state.audioSemitoneShift;
+      const octNum = Math.floor(midi / 12) - 1;
+      const noteNames = ['c', 'db', 'd', 'eb', 'e', 'f', 'gb', 'g', 'ab', 'a', 'bb', 'b'];
+      const noteLetter = noteNames[midi % 12];
+      const noteUpper = noteLetter.toUpperCase();
+
+      if (inst === 'khong') {
+        const played = await playAudioFile([
+          `./audio/khong/${stdFolder}/${noteLetter}${octNum}.mp3`,
+          `./audio/khong/${stdFolder}/${noteUpper}${octNum}.mp3`,
+          `./audio/khong/${stdFolder}/${noteLetter}${octNum}.wav`,
+          `./audio/khong/${stdFolder}/${noteLetter}${octNum}.ogg`,
+          `./audio/khong/${stdFolder}/${midi}.mp3`,
+          `./audio/khong/${stdFolder}/${midi}.wav`
+        ]);
+        if (played) return;
+      }
+
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      const vol = ((parseInt(document.getElementById('volumeSlider').value, 10) || 85) / 100) * 0.45;
+      const freq = 440 * Math.pow(2, (midi - 69) / 12);
+      const detune = getPitchDetuneCents();
+
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const subGain = ctx.createGain();
+
+      osc1.detune.value = detune;
+      osc2.detune.value = detune;
+
+      if (inst === 'khong') {
+        osc1.type = 'sine';
+        osc2.type = 'triangle';
+        osc1.frequency.setValueAtTime(freq, now);
+        osc2.frequency.setValueAtTime(freq * 2, now);
+        subGain.gain.value = 0.22;
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(vol, now + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.95);
+      } else if (inst === 'ranad_ek') {
+        osc1.type = 'triangle';
+        osc2.type = 'sine';
+        osc1.frequency.setValueAtTime(freq, now);
+        osc2.frequency.setValueAtTime(freq * 2.756, now);
+        subGain.gain.value = 0.35;
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(vol * 1.1, now + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+      } else if (inst === 'ranad_thum') {
+        osc1.type = 'sine';
+        osc2.type = 'sine';
+        osc1.frequency.setValueAtTime(freq * 0.5, now);
+        osc2.frequency.setValueAtTime(freq, now);
+        subGain.gain.value = 0.3;
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(vol, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+      } else if (inst === 'khlui') {
+        osc1.type = 'sine';
+        osc2.type = 'triangle';
+        osc1.frequency.setValueAtTime(freq, now);
+        osc2.frequency.setValueAtTime(freq * 2, now);
+        subGain.gain.value = 0.12;
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(vol * 0.85, now + 0.06);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.72);
+      } else if (inst === 'saw_duang') {
+        osc1.type = 'sawtooth';
+        osc2.type = 'triangle';
+        osc1.frequency.setValueAtTime(freq, now);
+        osc2.frequency.setValueAtTime(freq, now);
+        subGain.gain.value = 0.25;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(2200, now);
+        osc1.connect(filter);
+        filter.connect(gain);
+        osc2.connect(subGain);
+        subGain.connect(gain);
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(vol * 0.65, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+        gain.connect(ctx.destination);
+        osc1.start(now); osc2.start(now);
+        osc1.stop(now + 0.7); osc2.stop(now + 0.7);
+        return;
+      } else {
+        osc1.type = 'triangle';
+        osc2.type = 'sine';
+        osc1.frequency.setValueAtTime(freq, now);
+        osc2.frequency.setValueAtTime(freq * 2, now);
+        subGain.gain.value = 0.25;
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(vol, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+      }
+
+      osc1.connect(gain);
+      osc2.connect(subGain);
+      subGain.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 1.0);
+      osc2.stop(now + 1.0);
+    }
+
+    function playCellNotes(cellObj, slotDurationMs, forcePlay = false) {
+      const validNotes = cellObj.notes.filter(item => item.n !== '-');
+      if (validNotes.length === 0) return;
+
+      if (validNotes.length === 1) {
+        playSingleNote(validNotes[0].n, validNotes[0].o, forcePlay);
+      } else {
+        const subStepMs = Math.min(90, (slotDurationMs * 0.88) / validNotes.length);
+        validNotes.forEach((item, idx) => {
+          setTimeout(() => {
+            playSingleNote(item.n, item.o, forcePlay);
+          }, idx * subStepMs);
+        });
+      }
+    }
+
+    async function playChingSound(type) {
+      if (state.chingPattern === 'none') return;
+      const ok = await playAudioFile([
+        `./audio/ching/${type}.mp3`,
+        `./audio/ching_${type}.mp3`
+      ]);
+      if (ok) return;
+
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      const vol = ((parseInt(document.getElementById('volumeSlider').value, 10) || 85) / 100) * 0.22;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      if (type === 'open') {
+        osc.frequency.setValueAtTime(2540, now);
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      } else {
+        osc.frequency.setValueAtTime(2150, now);
+        gain.gain.setValueAtTime(vol * 1.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+      }
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.55);
+    }
+
+    function previewInstrumentChange() {
+      state.instrument = document.getElementById('instrumentSelect').value;
+      playSingleNote('ซ', 0, true);
+    }
+
+    // =========================================================
+    // 4. วาดตารางกระดาษโน้ตไทย
+    // =========================================================
+    function formatNoteDisplay(notesArr) {
+      if (!notesArr || notesArr.length === 0) return '-';
+      return notesArr.map(item => {
+        if (item.n === '-') return '-';
+        if (item.o === 1) return `<span style="text-decoration: overline dotted">${item.n}</span>`;
+        if (item.o === -1) return `<span style="text-decoration: underline dotted">${item.n}</span>`;
+        return item.n;
+      }).join('');
+    }
+
+    function isCellInSelection(mIdx, hand, cIdx) {
+      if (selectionRange.hand !== hand) return false;
+      const flat = mIdx * 4 + cIdx;
+      const minF = Math.min(selectionRange.startFlat, selectionRange.endFlat);
+      const maxF = Math.max(selectionRange.startFlat, selectionRange.endFlat);
+      return flat >= minF && flat <= maxF;
+    }
+
+    function getChingLabelForMeasure(mIdx) {
+      if (state.chingPattern === 'none') return { text: '', cls: '' };
+      if (state.chingPattern === '2_4') {
+        if (mIdx % 2 === 1) return { text: 'ฉิ่ง', cls: 'tn-ching-tag' };
+        if (mIdx > 0) return { text: 'ฉับ', cls: 'tn-chap-tag' };
+        return { text: '', cls: '' };
+      }
+      if (state.chingPattern === '4_4') {
+        const mod = mIdx % 4;
+        if (mod === 1) return { text: 'ฉิ่ง', cls: 'tn-ching-tag' };
+        if (mod === 3) return { text: 'ฉับ', cls: 'tn-chap-tag' };
+        return { text: '', cls: '' };
+      }
+      if (state.chingPattern === '3_4') {
+        const mod = mIdx % 3;
+        if (mod === 1) return { text: 'ฉิ่ง', cls: 'tn-ching-tag' };
+        if (mod === 2) return { text: 'ฉับ', cls: 'tn-chap-tag' };
+        return { text: '', cls: '' };
+      }
+      return { text: '', cls: '' };
+    }
+
+    function renderThaiSheet() {
+      const container = document.getElementById('thaiSheetContainer');
+      container.innerHTML = '';
+
+      const perRow = 8;
+      const totalRows = Math.ceil(state.measures.length / perRow);
+
+      for (let r = 0; r < totalRows; r++) {
+        const block = document.createElement('div');
+        block.className = 'tn-system-block';
+
+        const hands = state.trackMode === 'double' ? ['right', 'left'] : ['right'];
+
+        hands.forEach((hand, hRowIdx) => {
+          const rowGrid = document.createElement('div');
+          rowGrid.className = 'tn-row-grid';
+
+          const label = document.createElement('div');
+          label.className = 'tn-hand-label';
+          label.textContent = state.trackMode === 'double' ? (hand === 'right' ? 'ขวา' : 'ซ้าย') : `${r + 1}`;
+          rowGrid.appendChild(label);
+
+          for (let i = 0; i < perRow; i++) {
+            const mIdx = r * perRow + i;
+            const hongEl = document.createElement('div');
+            hongEl.className = 'tn-hong';
+
+            if (mIdx >= state.measures.length) {
+              rowGrid.appendChild(hongEl);
+              continue;
+            }
+
+            if (hRowIdx === 0) {
+              const header = document.createElement('div');
+              header.className = 'tn-hong-header';
+              const chInfo = getChingLabelForMeasure(mIdx);
+              header.innerHTML = `
+                <span class="tn-hong-num">${mIdx + 1}</span>
+                <span class="${chInfo.cls}">${chInfo.text}</span>
+              `;
+              hongEl.appendChild(header);
+            }
+
+            const cells = state.measures[mIdx][hand];
+            cells.forEach((cellObj, cIdx) => {
+              const cellEl = document.createElement('div');
+              cellEl.className = 'tn-cell';
+              cellEl.dataset.m = mIdx;
+              cellEl.dataset.h = hand;
+              cellEl.dataset.c = cIdx;
+
+              if (cellObj.lueam) cellEl.classList.add('lueam');
+              if (isCellInSelection(mIdx, hand, cIdx)) cellEl.classList.add('in-range');
+              if (cursor.measure === mIdx && cursor.hand === hand && cursor.cell === cIdx) {
+                cellEl.classList.add('selected');
+              }
+
+              if (cellObj.notes.length > 1) cellEl.classList.add('tn-sabat-text');
+              cellEl.innerHTML = formatNoteDisplay(cellObj.notes);
+
+              cellEl.onmousedown = (e) => {
+                if (e.button !== 0) return;
+                isDragging = true;
+                const flat = mIdx * 4 + cIdx;
+                if (e.shiftKey && selectionRange.hand === hand) {
+                  selectionRange.endFlat = flat;
+                } else {
+                  cursor = { measure: mIdx, hand, cell: cIdx };
+                  selectionRange = { startFlat: flat, endFlat: flat, hand };
+                }
+                playCellNotes(cellObj, 350, true);
+                updateCursorUI();
+                renderThaiSheet();
+              };
+
+              cellEl.onmouseenter = () => {
+                if (!isDragging || selectionRange.hand !== hand) return;
+                selectionRange.endFlat = mIdx * 4 + cIdx;
+                updateCursorUI();
+                renderThaiSheet();
+              };
+
+              hongEl.appendChild(cellEl);
+            });
+
+            rowGrid.appendChild(hongEl);
+          }
+
+          block.appendChild(rowGrid);
+        });
+
+        container.appendChild(block);
+      }
+    }
+
+    window.addEventListener('mouseup', () => { isDragging = false; });
+
+    // =========================================================
+    // 5. วาดโน้ตสากล SVG + แก้บั๊กโน้ตสะบัดเกินห้อง (ข้อ 3)
+    // =========================================================
+    function renderWesternStaff(activeMeasureIdx = -1) {
+      const container = document.getElementById('westernStaffContainer');
+      container.innerHTML = '';
+
+      const slotsPerBar = state.chingPattern === '4_4' ? 8 : (state.chingPattern === '3_4' ? 6 : 4);
+      const timeSigTop = state.chingPattern === '4_4' ? '4' : (state.chingPattern === '3_4' ? '3' : '2');
+      const timeSigBot = '4';
+
+      document.getElementById('timeSigBadge').textContent = `อัตราจังหวะ ${timeSigTop}/${timeSigBot}`;
+
+      let flatTicks = [];
+      state.measures.forEach((m, mIdx) => {
+        for (let c = 0; c < 4; c++) {
+          flatTicks.push({
+            mIdx,
+            cIdx: c,
+            right: m.right[c],
+            left: m.left[c]
+          });
+        }
+      });
+
+      let westernBars = [];
+      if (state.barMode === 'start') {
+        const pickupTicks = flatTicks.slice(0, 3);
+        const hasPickupNotes = pickupTicks.some(t =>
+          t.right.notes[0].n !== '-' || (state.trackMode === 'double' && t.left.notes[0].n !== '-')
+        );
+        if (hasPickupNotes) {
+          westernBars.push({ isPickup: true, barNum: 0, ticks: pickupTicks });
+        }
+        for (let idx = 3; idx < flatTicks.length; idx += slotsPerBar) {
+          westernBars.push({
+            isPickup: false,
+            barNum: westernBars.filter(b => !b.isPickup).length + 1,
+            ticks: flatTicks.slice(idx, idx + slotsPerBar)
+          });
+        }
+      } else {
+        for (let idx = 0; idx < flatTicks.length; idx += slotsPerBar) {
+          westernBars.push({
+            isPickup: false,
+            barNum: westernBars.length + 1,
+            ticks: flatTicks.slice(idx, idx + slotsPerBar)
+          });
+        }
+      }
+
+      const barsPerSystem = slotsPerBar === 8 ? 4 : (slotsPerBar === 6 ? 6 : 8);
+      const totalSystems = Math.ceil(westernBars.length / barsPerSystem);
+
+      for (let s = 0; s < totalSystems; s++) {
+        const sysBars = westernBars.slice(s * barsPerSystem, (s + 1) * barsPerSystem);
+        const isGrand = state.staffMode === 'grand' && state.trackMode === 'double';
+        const svgHeight = isGrand ? 175 : 112;
+
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('viewBox', `0 0 1120 ${svgHeight}`);
+        svg.setAttribute('class', 'w-full h-auto bg-white rounded-2xl border border-[#e4decb] shadow-2xs');
+
+        const drawStaffLines = (topY) => {
+          for (let l = 0; l < 5; l++) {
+            const y = topY + l * 8;
+            const line = document.createElementNS(svgNS, 'line');
+            line.setAttribute('x1', '18');
+            line.setAttribute('y1', y);
+            line.setAttribute('x2', '1102');
+            line.setAttribute('y2', y);
+            line.setAttribute('stroke', '#78716c');
+            line.setAttribute('stroke-width', '1');
+            svg.appendChild(line);
+          }
+          const clef = document.createElementNS(svgNS, 'text');
+          clef.setAttribute('x', '22');
+          clef.setAttribute('y', topY + 25);
+          clef.setAttribute('font-size', '32');
+          clef.setAttribute('fill', '#1c1917');
+          clef.textContent = '𝄞';
+          svg.appendChild(clef);
+
+          if (s === 0) {
+            const tTop = document.createElementNS(svgNS, 'text');
+            tTop.setAttribute('x', '50');
+            tTop.setAttribute('y', topY + 14);
+            tTop.setAttribute('font-size', '14');
+            tTop.setAttribute('font-weight', 'bold');
+            tTop.setAttribute('fill', '#1c1917');
+            tTop.textContent = timeSigTop;
+            svg.appendChild(tTop);
+
+            const tBot = document.createElementNS(svgNS, 'text');
+            tBot.setAttribute('x', '50');
+            tBot.setAttribute('y', topY + 29);
+            tBot.setAttribute('font-size', '14');
+            tBot.setAttribute('font-weight', 'bold');
+            tBot.setAttribute('fill', '#1c1917');
+            tBot.textContent = timeSigBot;
+            svg.appendChild(tBot);
+          }
+        };
+
+        const topStaffY = 30;
+        const botStaffY = 104;
+        drawStaffLines(topStaffY);
+        if (isGrand) {
+          drawStaffLines(botStaffY);
+          const brace = document.createElementNS(svgNS, 'line');
+          brace.setAttribute('x1', '18');
+          brace.setAttribute('y1', topStaffY);
+          brace.setAttribute('x2', '18');
+          brace.setAttribute('y2', botStaffY + 32);
+          brace.setAttribute('stroke', '#1c1917');
+          brace.setAttribute('stroke-width', '2');
+          svg.appendChild(brace);
+        }
+
+        const startX = s === 0 ? 72 : 56;
+        const barWidth = (1100 - startX) / barsPerSystem;
+
+        sysBars.forEach((bar, bIdx) => {
+          const bx = startX + bIdx * barWidth;
+          const barSlots = bar.ticks.length;
+
+          const isBarPlaying = activeMeasureIdx >= 0 && bar.ticks.some(t => t.mIdx === activeMeasureIdx);
+          if (isBarPlaying) {
+            const hl = document.createElementNS(svgNS, 'rect');
+            hl.setAttribute('x', bx + 2);
+            hl.setAttribute('y', topStaffY - 8);
+            hl.setAttribute('width', barWidth - 4);
+            hl.setAttribute('height', (isGrand ? botStaffY + 40 : topStaffY + 40) - (topStaffY - 8));
+            hl.setAttribute('rx', '6');
+            hl.setAttribute('fill', '#d1fae5');
+            hl.setAttribute('opacity', '0.65');
+            svg.appendChild(hl);
+          }
+
+          const numTxt = document.createElementNS(svgNS, 'text');
+          numTxt.setAttribute('x', bx + 4);
+          numTxt.setAttribute('y', topStaffY - 12);
+          numTxt.setAttribute('font-size', '10');
+          numTxt.setAttribute('fill', bar.isPickup ? '#d97706' : '#a8a29e');
+          numTxt.textContent = bar.isPickup ? 'ห้องเก็บ' : bar.barNum;
+          svg.appendChild(numTxt);
+
+          const barLine = document.createElementNS(svgNS, 'line');
+          barLine.setAttribute('x1', bx + barWidth);
+          barLine.setAttribute('y1', topStaffY);
+          barLine.setAttribute('x2', bx + barWidth);
+          barLine.setAttribute('y2', isGrand ? botStaffY + 32 : topStaffY + 32);
+          barLine.setAttribute('stroke', '#44403c');
+          barLine.setAttribute('stroke-width', '1.2');
+          svg.appendChild(barLine);
+
+          const renderBarNotes = (staffTopY, handSelector) => {
+            let events = [];
+            let i = 0;
+            while (i < barSlots) {
+              const tick = bar.ticks[i];
+              let cellData = tick.right;
+              if (handSelector === 'combined') {
+                cellData = tick.right.notes[0].n !== '-' ? tick.right : tick.left;
+              } else if (handSelector === 'left') {
+                cellData = tick.left;
+              }
+
+              // กรณีช่องปัจจุบันมีโน้ตสะบัด (หลายตัวใน 1 ช่อง) ไม่ต้องรวบขีดว่างช่องถัดไปมาปนจนเกินจังหวะ
+              const validSubNotes = cellData.notes.filter(item => item.n !== '-');
+              if (validSubNotes.length > 1) {
+                const subCount = validSubNotes.length;
+                validSubNotes.forEach((sn, sIdx) => {
+                  events.push({
+                    type: 'note',
+                    note: sn.n,
+                    oct: sn.o,
+                    startSlot: i + (sIdx / subCount),
+                    dur: 1 / subCount,
+                    isSixteenth: true
+                  });
+                });
+                i += 1;
+                continue;
+              }
+
+              let dur = 1;
+              while (i + dur < barSlots) {
+                const nextTick = bar.ticks[i + dur];
+                let nextCell = nextTick.right;
+                if (handSelector === 'combined') {
+                  nextCell = nextTick.right.notes[0].n !== '-' ? nextTick.right : nextTick.left;
+                } else if (handSelector === 'left') {
+                  nextCell = nextTick.left;
+                }
+                if (nextCell.notes[0].n === '-') dur++;
+                else break;
+              }
+
+              const firstNote = cellData.notes[0];
+              if (firstNote.n === '-') {
+                events.push({ type: 'rest', startSlot: i, dur });
+              } else {
+                events.push({
+                  type: 'note',
+                  note: firstNote.n,
+                  oct: firstNote.o,
+                  startSlot: i,
+                  dur,
+                  isSixteenth: false
+                });
+              }
+              i += dur;
+            }
+
+            const c4Y = staffTopY + 40;
+            const slotOffset = bar.isPickup ? (slotsPerBar - barSlots) : 0;
+            // เพิ่มขอบซ้ายขวาในห้อง (padding) เพื่อป้องกันหัวโน้ตตัวสุดท้ายชนเส้นกั้นห้อง (ข้อ 3)
+            const innerMargin = 8;
+            const usableWidth = barWidth - (innerMargin * 2);
+            const slotWidth = usableWidth / slotsPerBar;
+
+            events.forEach(ev => {
+              // จัดตำแหน่ง x ให้อยู่กึ่งกลางของช่วงเวลาตนเองอย่างแม่นยำ (ไม่บวก 0.5 เกินสำหรับโน้ตสะบัด)
+              const centerSlot = ev.startSlot + slotOffset + (ev.isSixteenth ? (ev.dur * 0.5) : 0.45);
+              ev.x = bx + innerMargin + (centerSlot * slotWidth);
+              // ล็อกพิกัดไม่ให้เกินเส้นกั้นห้องเด็ดขาด
+              ev.x = Math.max(bx + 7, Math.min(bx + barWidth - 7, ev.x));
+
+              if (ev.type === 'note') {
+                const step = NOTE_INFO[ev.note].step + (ev.oct * 7);
+                ev.step = step;
+                ev.y = c4Y - step * 4;
+                ev.isBeamable = ev.dur <= 1;
+              }
+            });
+
+            // รวมหางโน้ตเขบ็ตตามกลุ่มจังหวะ (1 Beat = 2 Slots)
+            const beamGroups = [];
+            for (let beatStart = 0; beatStart < barSlots; beatStart += 2) {
+              const group = events.filter(ev =>
+                ev.type === 'note' &&
+                ev.isBeamable &&
+                ev.startSlot >= beatStart &&
+                ev.startSlot < beatStart + 2
+              );
+              if (group.length >= 2) {
+                beamGroups.push(group);
+                group.forEach(ev => { ev.inBeamGroup = true; });
+              }
+            }
+
+            const noteGroupEl = document.createElementNS(svgNS, 'g');
+            noteGroupEl.setAttribute('class', 'western-note-elem');
+
+            events.forEach(ev => {
+              if (ev.type === 'rest') {
+                const rest = document.createElementNS(svgNS, 'text');
+                rest.setAttribute('x', ev.x - 4);
+                rest.setAttribute('y', staffTopY + 21);
+                rest.setAttribute('font-size', '18');
+                rest.setAttribute('fill', '#78716c');
+                rest.textContent = ev.dur >= 2 ? '𝄽' : '𝄾';
+                noteGroupEl.appendChild(rest);
+                return;
+              }
+
+              if (ev.step <= 0) {
+                for (let st = 0; st >= ev.step; st -= 2) {
+                  const ly = c4Y - st * 4;
+                  const led = document.createElementNS(svgNS, 'line');
+                  led.setAttribute('x1', ev.x - 6.5);
+                  led.setAttribute('y1', ly);
+                  led.setAttribute('x2', ev.x + 6.5);
+                  led.setAttribute('y2', ly);
+                  led.setAttribute('stroke', '#1c1917');
+                  led.setAttribute('stroke-width', '1.1');
+                  noteGroupEl.appendChild(led);
+                }
+              } else if (ev.step >= 12) {
+                for (let st = 12; st <= ev.step; st += 2) {
+                  const ly = c4Y - st * 4;
+                  const led = document.createElementNS(svgNS, 'line');
+                  led.setAttribute('x1', ev.x - 6.5);
+                  led.setAttribute('y1', ly);
+                  led.setAttribute('x2', ev.x + 6.5);
+                  led.setAttribute('y2', ly);
+                  led.setAttribute('stroke', '#1c1917');
+                  led.setAttribute('stroke-width', '1.1');
+                  noteGroupEl.appendChild(led);
+                }
+              }
+
+              const head = document.createElementNS(svgNS, 'ellipse');
+              head.setAttribute('cx', ev.x);
+              head.setAttribute('cy', ev.y);
+              head.setAttribute('rx', ev.isSixteenth ? '3.5' : '4.2');
+              head.setAttribute('ry', ev.isSixteenth ? '2.6' : '3.0');
+              head.setAttribute('transform', `rotate(-18 ${ev.x} ${ev.y})`);
+              head.setAttribute('fill', ev.dur >= 4 ? '#ffffff' : '#1c1917');
+              head.setAttribute('stroke', '#1c1917');
+              head.setAttribute('stroke-width', '1.3');
+              noteGroupEl.appendChild(head);
+
+              if (ev.dur === 3 || ev.dur === 6) {
+                const dot = document.createElementNS(svgNS, 'circle');
+                dot.setAttribute('cx', ev.x + 7);
+                dot.setAttribute('cy', ev.y);
+                dot.setAttribute('r', '1.6');
+                dot.setAttribute('fill', '#1c1917');
+                noteGroupEl.appendChild(dot);
+              }
+
+              if (state.showWesternNoteNames) {
+                const lbl = document.createElementNS(svgNS, 'text');
+                lbl.setAttribute('x', ev.x);
+                lbl.setAttribute('y', staffTopY + 52);
+                lbl.setAttribute('text-anchor', 'middle');
+                lbl.setAttribute('font-size', '9');
+                lbl.setAttribute('font-weight', 'bold');
+                lbl.setAttribute('fill', '#4338ca');
+                lbl.textContent = `${NOTE_INFO[ev.note].eng}(${ev.note})`;
+                noteGroupEl.appendChild(lbl);
+              }
+
+              if (!ev.inBeamGroup && ev.dur < 8) {
+                const stemUp = ev.step < 6;
+                const sx = stemUp ? ev.x + 3.4 : ev.x - 3.4;
+                const sy2 = stemUp ? ev.y - 22 : ev.y + 22;
+                const stem = document.createElementNS(svgNS, 'line');
+                stem.setAttribute('x1', sx);
+                stem.setAttribute('y1', ev.y);
+                stem.setAttribute('x2', sx);
+                stem.setAttribute('y2', sy2);
+                stem.setAttribute('stroke', '#1c1917');
+                stem.setAttribute('stroke-width', '1.3');
+                noteGroupEl.appendChild(stem);
+
+                if (ev.dur <= 1) {
+                  const flag = document.createElementNS(svgNS, 'path');
+                  const d = stemUp
+                    ? `M ${sx} ${sy2} Q ${sx + 6} ${sy2 + 5} ${sx + 4} ${sy2 + 12}`
+                    : `M ${sx} ${sy2} Q ${sx + 6} ${sy2 - 5} ${sx + 4} ${sy2 - 12}`;
+                  flag.setAttribute('d', d);
+                  flag.setAttribute('fill', 'none');
+                  flag.setAttribute('stroke', '#1c1917');
+                  flag.setAttribute('stroke-width', '1.5');
+                  noteGroupEl.appendChild(flag);
+                }
+              }
+            });
+
+            beamGroups.forEach(group => {
+              const avgStep = group.reduce((acc, g) => acc + g.step, 0) / group.length;
+              const stemUp = avgStep < 6;
+              const stemLen = 22;
+
+              const first = group[0];
+              const last = group[group.length - 1];
+              const x1 = stemUp ? first.x + 3.4 : first.x - 3.4;
+              const x2 = stemUp ? last.x + 3.4 : last.x - 3.4;
+
+              let y1 = stemUp ? first.y - stemLen : first.y + stemLen;
+              let y2 = stemUp ? last.y - stemLen : last.y + stemLen;
+              const maxSlope = 8;
+              if (Math.abs(y2 - y1) > maxSlope) {
+                const midY = (y1 + y2) / 2;
+                const dir = y2 > y1 ? 1 : -1;
+                y1 = midY - (maxSlope / 2) * dir;
+                y2 = midY + (maxSlope / 2) * dir;
+              }
+
+              group.forEach(ev => {
+                const sx = stemUp ? ev.x + 3.4 : ev.x - 3.4;
+                const ratio = (x2 === x1) ? 0 : (sx - x1) / (x2 - x1);
+                const beamYAtX = y1 + ratio * (y2 - y1);
+                if (stemUp && beamYAtX > ev.y - 15) {
+                  const shift = beamYAtX - (ev.y - 15);
+                  y1 -= shift; y2 -= shift;
+                } else if (!stemUp && beamYAtX < ev.y + 15) {
+                  const shift = (ev.y + 15) - beamYAtX;
+                  y1 += shift; y2 += shift;
+                }
+              });
+
+              group.forEach(ev => {
+                const sx = stemUp ? ev.x + 3.4 : ev.x - 3.4;
+                const ratio = (x2 === x1) ? 0 : (sx - x1) / (x2 - x1);
+                const beamYAtX = y1 + ratio * (y2 - y1);
+                const stem = document.createElementNS(svgNS, 'line');
+                stem.setAttribute('x1', sx);
+                stem.setAttribute('y1', ev.y);
+                stem.setAttribute('x2', sx);
+                stem.setAttribute('y2', beamYAtX);
+                stem.setAttribute('stroke', '#1c1917');
+                stem.setAttribute('stroke-width', '1.25');
+                noteGroupEl.appendChild(stem);
+              });
+
+              const beam = document.createElementNS(svgNS, 'line');
+              beam.setAttribute('x1', x1 - 0.5);
+              beam.setAttribute('y1', y1);
+              beam.setAttribute('x2', x2 + 0.5);
+              beam.setAttribute('y2', y2);
+              beam.setAttribute('stroke', '#1c1917');
+              beam.setAttribute('stroke-width', '3.1');
+              noteGroupEl.appendChild(beam);
+
+              // เส้นคานชั้นที่ 2 สำหรับโน้ตสะบัด (เขบ็ต 2 ชั้น)
+              for (let gIdx = 0; gIdx < group.length - 1; gIdx++) {
+                if (group[gIdx].isSixteenth && group[gIdx + 1].isSixteenth) {
+                  const sxA = stemUp ? group[gIdx].x + 3.4 : group[gIdx].x - 3.4;
+                  const sxB = stemUp ? group[gIdx + 1].x + 3.4 : group[gIdx + 1].x - 3.4;
+                  const rA = (x2 === x1) ? 0 : (sxA - x1) / (x2 - x1);
+                  const rB = (x2 === x1) ? 0 : (sxB - x1) / (x2 - x1);
+                  const offset2 = stemUp ? 4.8 : -4.8;
+                  const beam2 = document.createElementNS(svgNS, 'line');
+                  beam2.setAttribute('x1', sxA);
+                  beam2.setAttribute('y1', y1 + rA * (y2 - y1) + offset2);
+                  beam2.setAttribute('x2', sxB);
+                  beam2.setAttribute('y2', y1 + rB * (y2 - y1) + offset2);
+                  beam2.setAttribute('stroke', '#1c1917');
+                  beam2.setAttribute('stroke-width', '2.5');
+                  noteGroupEl.appendChild(beam2);
+                }
+              }
+            });
+
+            svg.appendChild(noteGroupEl);
+          };
+
+          if (isGrand) {
+            renderBarNotes(topStaffY, 'right');
+            renderBarNotes(botStaffY, 'left');
+          } else {
+            renderBarNotes(topStaffY, 'combined');
+          }
+        });
+
+        container.appendChild(svg);
+      }
+    }
+
+    // =========================================================
+    // 6. การแก้ไขโน้ต, ลบถอยหลังต่อเนื่อง (ข้อ 5), คีย์ลัดไม่ติดภาษาไทย (ข้อ 1)
+    // =========================================================
+    function getSelectedFlatIndices() {
+      const minF = Math.min(selectionRange.startFlat, selectionRange.endFlat);
+      const maxF = Math.max(selectionRange.startFlat, selectionRange.endFlat);
+      const list = [];
+      for (let f = minF; f <= maxF; f++) {
+        list.push({
+          mIdx: Math.floor(f / 4),
+          cIdx: f % 4,
+          hand: selectionRange.hand
+        });
+      }
+      return list;
+    }
+
+    function insertNote(noteChar, oct = 0) {
+      pushHistory();
+      const cellObj = state.measures[cursor.measure][cursor.hand][cursor.cell];
+      const isSabat = document.getElementById('sabatToggle').checked;
+
+      if (isSabat && noteChar !== '-') {
+        if (cellObj.notes.length === 1 && cellObj.notes[0].n === '-') {
+          cellObj.notes = [{ n: noteChar, o: oct }];
+        } else if (cellObj.notes.length < 4) {
+          cellObj.notes.push({ n: noteChar, o: oct });
+        } else {
+          cellObj.notes = [{ n: noteChar, o: oct }];
+        }
+        playCellNotes(cellObj, 350, true);
+      } else {
+        cellObj.notes = [{ n: noteChar, o: noteChar === '-' ? 0 : oct }];
+        if (noteChar !== '-') playSingleNote(noteChar, oct, true);
+        moveCursor(1);
+      }
+      renderAll();
+    }
+
+    // การลบแบบพิมพ์เอกสาร (ข้อ 5): ลบช่องปัจจุบันแล้วถอยเคอร์เซอร์ไปช่องก่อนหน้าทันที
+    function backspaceDeleteNote() {
+      pushHistory();
+      const selectedCount = Math.abs(selectionRange.endFlat - selectionRange.startFlat) + 1;
+      if (selectedCount > 1) {
+        const targets = getSelectedFlatIndices();
+        targets.forEach(({ mIdx, hand, cIdx }) => {
+          state.measures[mIdx][hand][cIdx] = { notes: [{ n: '-', o: 0 }], lueam: false };
+        });
+        const minF = Math.min(selectionRange.startFlat, selectionRange.endFlat);
+        cursor.measure = Math.floor(minF / 4);
+        cursor.cell = minF % 4;
+        selectionRange = { startFlat: minF, endFlat: minF, hand: cursor.hand };
+      } else {
+        const curCell = state.measures[cursor.measure][cursor.hand][cursor.cell];
+        if (curCell.notes[0].n !== '-' || curCell.notes.length > 1) {
+          // หากช่องปัจจุบันมีโน้ต ให้ลบช่องนี้ก่อนแล้วถอยไปช่องหน้าทันที
+          state.measures[cursor.measure][cursor.hand][cursor.cell] = { notes: [{ n: '-', o: 0 }], lueam: false };
+          moveCursor(-1);
+        } else {
+          // หากช่องปัจจุบันว่างอยู่แล้ว ให้ถอยไปลบช่องข้างหน้าทันทีเหมือนปุ่ม Backspace ใน Word
+          moveCursor(-1);
+          state.measures[cursor.measure][cursor.hand][cursor.cell] = { notes: [{ n: '-', o: 0 }], lueam: false };
+        }
+      }
+      renderAll();
+    }
+
+    function clearSelectedCellsForward() {
+      pushHistory();
+      const targets = getSelectedFlatIndices();
+      targets.forEach(({ mIdx, hand, cIdx }) => {
+        state.measures[mIdx][hand][cIdx] = { notes: [{ n: '-', o: 0 }], lueam: false };
+      });
+      moveCursor(1);
+      renderAll();
+    }
+
+    function shiftSelectedOctave(delta) {
+      pushHistory();
+      const targets = getSelectedFlatIndices();
+      targets.forEach(({ mIdx, hand, cIdx }) => {
+        const cellObj = state.measures[mIdx][hand][cIdx];
+        cellObj.notes.forEach(item => {
+          if (item.n !== '-') item.o = Math.max(-1, Math.min(1, item.o + delta));
+        });
+      });
+      const curCell = state.measures[cursor.measure][cursor.hand][cursor.cell];
+      playCellNotes(curCell, 350, true);
+      renderAll();
+    }
+
+    function transposeSongScale(stepDelta) {
+      pushHistory();
+      state.measures.forEach(m => {
+        ['right', 'left'].forEach(hand => {
+          m[hand].forEach(cellObj => {
+            cellObj.notes.forEach(item => {
+              if (item.n === '-') return;
+              const idx = SCALE_ORDER.indexOf(item.n);
+              if (idx === -1) return;
+              let newIdx = idx + stepDelta;
+              let newOct = item.o;
+              if (newIdx >= 7) { newIdx -= 7; newOct = Math.min(1, newOct + 1); }
+              else if (newIdx < 0) { newIdx += 7; newOct = Math.max(-1, newOct - 1); }
+              item.n = SCALE_ORDER[newIdx];
+              item.o = newOct;
+            });
+          });
+        });
+      });
+      renderAll();
+    }
+
+    function setAudioKeyPreset(val) {
+      state.audioSemitoneShift = parseInt(val, 10) || 0;
+      const sign = state.audioSemitoneShift > 0 ? `+${state.audioSemitoneShift}` : `${state.audioSemitoneShift}`;
+      document.getElementById('pitchShiftVal').textContent = `คีย์ (${sign})`;
+      playSingleNote('ด', 0, true);
+    }
+
+    function copySelection() {
+      const targets = getSelectedFlatIndices();
+      clipboardCells = targets.map(({ mIdx, hand, cIdx }) =>
+        JSON.parse(JSON.stringify(state.measures[mIdx][hand][cIdx]))
+      );
+      const badge = document.getElementById('cursorPosLabel');
+      const prevText = badge.textContent;
+      badge.textContent = `✓ คัดลอกแล้ว ${clipboardCells.length} ช่อง`;
+      setTimeout(() => { badge.textContent = prevText; }, 1200);
+    }
+
+    function pasteSelection() {
+      if (!clipboardCells.length) return;
+      pushHistory();
+      const startFlat = cursor.measure * 4 + cursor.cell;
+      const maxFlat = state.measures.length * 4 - 1;
+      clipboardCells.forEach((cellData, idx) => {
+        const targetFlat = startFlat + idx;
+        if (targetFlat <= maxFlat) {
+          const mIdx = Math.floor(targetFlat / 4);
+          const cIdx = targetFlat % 4;
+          state.measures[mIdx][cursor.hand][cIdx] = JSON.parse(JSON.stringify(cellData));
+        }
+      });
+      renderAll();
+    }
+
+    function setTimingType(type) {
+      pushHistory();
+      const targets = getSelectedFlatIndices();
+      targets.forEach(({ mIdx, hand, cIdx }) => {
+        state.measures[mIdx][hand][cIdx].lueam = (type === 'lueam');
+      });
+      document.getElementById('btnLueam').classList.toggle('active', type === 'lueam');
+      document.getElementById('btnStraight').classList.toggle('active', type === 'straight');
+      renderThaiSheet();
+    }
+
+    function moveCursor(step, extendSelection = false) {
+      let flat = cursor.measure * 4 + cursor.cell + step;
+      const maxFlat = state.measures.length * 4 - 1;
+      flat = Math.max(0, Math.min(maxFlat, flat));
+      cursor.measure = Math.floor(flat / 4);
+      cursor.cell = flat % 4;
+
+      if (extendSelection) selectionRange.endFlat = flat;
+      else selectionRange = { startFlat: flat, endFlat: flat, hand: cursor.hand };
+      updateCursorUI();
+    }
+
+    function updateCursorUI() {
+      const minF = Math.min(selectionRange.startFlat, selectionRange.endFlat);
+      const maxF = Math.max(selectionRange.startFlat, selectionRange.endFlat);
+      const count = maxF - minF + 1;
+      document.getElementById('cursorPosLabel').textContent = count > 1
+        ? `เลือกคลุมดำ ${count} ช่อง`
+        : `ห้อง ${cursor.measure + 1} • ช่อง ${cursor.cell + 1}`;
+    }
+
+    // จัดการคีย์ลัดด้วย e.code เพื่อให้ทำงานได้แม้เปิดคีย์บอร์ดภาษาไทย (ข้อ 1)
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+      if (e.key === 'Escape' && document.body.classList.contains('presentation-mode')) {
+        togglePresentationMode(false);
+        return;
+      }
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+        return;
+      }
+
+      // คำสั่งแก้ไขมาตรฐาน: Ctrl+C, Ctrl+V, Ctrl+Z, Ctrl+Y ใช้ e.code จึงทำงานได้แม้เป็นคีย์บอร์ดภาษาไทย
+      if (e.ctrlKey || e.metaKey) {
+        if (e.code === 'KeyC') { e.preventDefault(); copySelection(); return; }
+        if (e.code === 'KeyV') { e.preventDefault(); pasteSelection(); return; }
+        if (e.code === 'KeyZ') { e.preventDefault(); undoAction(); return; }
+        if (e.code === 'KeyY') { e.preventDefault(); redoAction(); return; }
+        return; // นำคีย์ลัด Ctrl + โน้ต ออกทั้งหมดตามข้อ 1
+      }
+
+      // นำคีย์ลัด Shift + โน้ต ออกทั้งหมดตามข้อ 1 (ยกเว้น Shift + ลูกศร สำหรับคลุมดำ)
+      if (!e.shiftKey && CODE_TO_THAI[e.code]) {
+        e.preventDefault();
+        insertNote(CODE_TO_THAI[e.code], 0);
+        return;
+      }
+
+      // พิมพ์อักษรไทย ด ร ม ฟ ซ ล ท
+      if (!e.shiftKey && NOTE_INFO[e.key]) {
+        e.preventDefault();
+        insertNote(e.key, 0);
+        return;
+      }
+
+      if (e.key === '-' || e.code === 'Minus' || e.code === 'NumpadSubtract') {
+        e.preventDefault();
+        insertNote('-', 0);
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        backspaceDeleteNote();
+      } else if (e.key === 'Delete') {
+        e.preventDefault();
+        clearSelectedCellsForward();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        moveCursor(1, e.shiftKey);
+        renderThaiSheet();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        moveCursor(-1, e.shiftKey);
+        renderThaiSheet();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        shiftSelectedOctave(1);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        shiftSelectedOctave(-1);
+      }
+    });
+
+    // =========================================================
+    // 7. นำเข้าไฟล์ MIDI (.mid) และแปลงเป็นโน้ตไทย (ข้อ 2)
+    // =========================================================
+    function handleImportFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const nameLower = file.name.toLowerCase();
+
+      if (nameLower.endsWith('.mid') || nameLower.endsWith('.midi')) {
+        importMIDIFile(file);
+      } else {
+        importJSONFile(file);
+      }
+      e.target.value = '';
+    }
+
+    function midiNumberToThai(midiNum) {
+      // แปลงเลข MIDI (เช่น 60 = C4 = ด กลาง) เป็นตัวโน้ตไทย + ระดับเสียง
+      const semitone = ((midiNum % 12) + 12) % 12;
+      const octDiff = Math.floor(midiNum / 12) - 5; // C4 (60) => 5 - 5 = 0
+      const clampedOct = Math.max(-1, Math.min(1, octDiff));
+
+      // แมป 12 ครึ่งเสียงลงบันไดเสียง 7 ตัวของไทย
+      const map12 = ['ด', 'ด', 'ร', 'ร', 'ม', 'ฟ', 'ฟ', 'ซ', 'ซ', 'ล', 'ล', 'ท'];
+      return { n: map12[semitone], o: clampedOct };
+    }
+
+    function importMIDIFile(file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const buf = new Uint8Array(ev.target.result);
+          let pos = 0;
+
+          const readUint32 = () => {
+            const v = (buf[pos] << 24) | (buf[pos + 1] << 16) | (buf[pos + 2] << 8) | buf[pos + 3];
+            pos += 4;
+            return v >>> 0;
+          };
+          const readUint16 = () => {
+            const v = (buf[pos] << 8) | buf[pos + 1];
+            pos += 2;
+            return v;
+          };
+          const readVarLen = () => {
+            let val = 0;
+            while (pos < buf.length) {
+              const b = buf[pos++];
+              val = (val << 7) | (b & 0x7F);
+              if ((b & 0x80) === 0) break;
+            }
+            return val;
+          };
+
+          // อ่าน Header MThd
+          if (buf[0] !== 0x4D || buf[1] !== 0x54 || buf[2] !== 0x68 || buf[3] !== 0x64) {
+            alert('ไฟล์ MIDI ไม่ถูกต้อง');
+            return;
+          }
+          pos = 8;
+          const format = readUint16();
+          const numTracks = readUint16();
+          const division = readUint16();
+          const tpq = (division & 0x8000) ? 480 : division;
+          const ticksPerSlot = tpq / 2; // 1 ช่องโน้ตไทย = เขบ็ต 1 ชั้น (ครึ่งจังหวะ)
+
+          let noteOns = [];
+          let detectedBpm = 65;
+
+          for (let t = 0; t < numTracks && pos < buf.length; t++) {
+            if (buf[pos] !== 0x4D || buf[pos + 1] !== 0x54 || buf[pos + 2] !== 0x72 || buf[pos + 3] !== 0x6B) break;
+            pos += 4;
+            const trkLen = readUint32();
+            const trkEnd = pos + trkLen;
+
+            let absTick = 0;
+            let runningStatus = 0;
+
+            while (pos < trkEnd && pos < buf.length) {
+              const delta = readVarLen();
+              absTick += delta;
+
+              let status = buf[pos];
+              if (status < 0x80) {
+                status = runningStatus;
+              } else {
+                pos++;
+                if (status < 0xF0) runningStatus = status;
+              }
+
+              const eventType = status & 0xF0;
+
+              if (eventType === 0x90) {
+                const note = buf[pos++];
+                const vel = buf[pos++];
+                if (vel > 0) {
+                  noteOns.push({ tick: absTick, midi: note, track: t });
+                }
+              } else if (eventType === 0x80 || eventType === 0xA0 || eventType === 0xB0 || eventType === 0xE0) {
+                pos += 2;
+              } else if (eventType === 0xC0 || eventType === 0xD0) {
+                pos += 1;
+              } else if (status === 0xFF) {
+                const metaType = buf[pos++];
+                const metaLen = readVarLen();
+                if (metaType === 0x51 && metaLen === 3) {
+                  const mpqn = (buf[pos] << 16) | (buf[pos + 1] << 8) | buf[pos + 2];
+                  detectedBpm = Math.max(30, Math.min(240, Math.round(60000000 / mpqn)));
+                }
+                pos += metaLen;
+              } else if (status === 0xF0 || status === 0xF7) {
+                const sysLen = readVarLen();
+                pos += sysLen;
+              }
+            }
+            pos = trkEnd;
+          }
+
+          if (noteOns.length === 0) {
+            alert('ไม่พบข้อมูลตัวโน้ตในไฟล์ MIDI นี้');
+            return;
+          }
+
+          pushHistory();
+          const maxTick = Math.max(...noteOns.map(n => n.tick));
+          const totalSlots = Math.ceil((maxTick + ticksPerSlot) / ticksPerSlot);
+          const totalMeasures = Math.max(8, Math.ceil(totalSlots / 32) * 8);
+
+          const newMeasures = Array.from({ length: totalMeasures }, () => ({
+            right: Array.from({ length: 4 }, () => ({ notes: [{ n: '-', o: 0 }], lueam: false })),
+            left: Array.from({ length: 4 }, () => ({ notes: [{ n: '-', o: 0 }], lueam: false }))
+          }));
+
+          // จัดกลุ่มโน้ตลงแต่ละช่องเวลา (Slot)
+          const slotBuckets = new Map();
+          noteOns.forEach(item => {
+            const slotIdx = Math.round(item.tick / ticksPerSlot);
+            if (!slotBuckets.has(slotIdx)) slotBuckets.set(slotIdx, []);
+            slotBuckets.get(slotIdx).push(item.midi);
+          });
+
+          slotBuckets.forEach((midiList, slotIdx) => {
+            const mIdx = Math.floor(slotIdx / 4);
+            const cIdx = slotIdx % 4;
+            if (mIdx >= totalMeasures) return;
+
+            // เรียงจากเสียงสูงไปต่ำ: ตัวสูงสุดใส่มือขวา ตัวต่ำกว่าใส่มือซ้าย
+            const sorted = [...new Set(midiList)].sort((a, b) => b - a);
+            newMeasures[mIdx].right[cIdx].notes = [midiNumberToThai(sorted[0])];
+
+            if (sorted.length > 1) {
+              newMeasures[mIdx].left[cIdx].notes = [midiNumberToThai(sorted[sorted.length - 1])];
+            }
+          });
+
+          state.measures = newMeasures;
+          setBPMDirect(detectedBpm);
+          document.getElementById('songTitleInput').value = file.name.replace(/\.(mid|midi)$/i, '');
+          document.getElementById('songMetaBadge').textContent = `${state.measures.length} ห้อง • 4 ช่อง/ห้อง`;
+          cursor = { measure: 0, hand: 'right', cell: 0 };
+          selectionRange = { startFlat: 0, endFlat: 0, hand: 'right' };
+          renderAll();
+        } catch (err) {
+          alert('เกิดข้อผิดพลาดในการอ่านไฟล์ MIDI: ' + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function importJSONFile(file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (data.measures) {
+            pushHistory();
+            document.getElementById('songTitleInput').value = data.title || 'โน้ตเพลงไทย';
+            document.getElementById('sectionTitleInput').value = data.section || 'ท่อน 1';
+            state.measures = data.measures;
+            document.getElementById('songMetaBadge').textContent = `${state.measures.length} ห้อง • 4 ช่อง/ห้อง`;
+            if (data.bpm) setBPMDirect(data.bpm);
+            if (data.chingPattern) {
+              document.getElementById('chingPatternSelect').value = data.chingPattern;
+              changeChingPattern(data.chingPattern);
+            }
+            renderAll();
+          }
+        } catch (err) {
+          alert('ไม่สามารถอ่านไฟล์ JSON ได้');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // =========================================================
+    // 8. การส่งออก/พิมพ์, ขยายกึ่งกลางหน้าจอ (ข้อ 4), โหมดนำเสนอ
+    // =========================================================
+    function togglePresentationMode(enable) {
+      document.body.classList.toggle('presentation-mode', enable);
+    }
+
+    function toggleExportMenu() {
+      document.getElementById('exportDropdown').classList.toggle('hidden');
+    }
+
+    function printWithOptions(targetMode, isBlank) {
+      document.getElementById('exportDropdown').classList.add('hidden');
+      document.body.classList.remove('print-only-thai', 'print-only-western', 'print-blank-sheet');
+
+      if (targetMode === 'thai') document.body.classList.add('print-only-thai');
+      else if (targetMode === 'western') document.body.classList.add('print-only-western');
+
+      if (isBlank) document.body.classList.add('print-blank-sheet');
+
+      window.print();
+
+      setTimeout(() => {
+        document.body.classList.remove('print-only-thai', 'print-only-western', 'print-blank-sheet');
+      }, 500);
+    }
+
+    function exportMIDI() {
+      const bpm = state.bpm || 65;
+      const mpqn = Math.round(60000000 / bpm);
+      const tpq = 480;
+
+      let events = [];
+      let currentTick = 0;
+
+      state.measures.forEach(m => {
+        for (let c = 0; c < 4; c++) {
+          const slotTicks = 240;
+          ['right', 'left'].forEach(hand => {
+            if (hand === 'left' && state.trackMode !== 'double') return;
+            const valid = m[hand][c].notes.filter(item => item.n !== '-');
+            if (valid.length === 0) return;
+            const subTicks = Math.floor(slotTicks / valid.length);
+            valid.forEach((item, idx) => {
+              const midiNote = NOTE_INFO[item.n].midi + (item.o * 12) + state.audioSemitoneShift;
+              const startT = currentTick + idx * subTicks;
+              const endT = startT + Math.max(60, subTicks - 20);
+              events.push({ tick: startT, type: 0x90, note: midiNote, vel: hand === 'right' ? 96 : 80 });
+              events.push({ tick: endT, type: 0x80, note: midiNote, vel: 0 });
+            });
+          });
+          currentTick += slotTicks;
+        }
+      });
+
+      events.sort((a, b) => a.tick - b.tick || a.type - b.type);
+
+      const writeVarLen = (val) => {
+        let buffer = [val & 0x7F];
+        while ((val >>= 7) > 0) buffer.unshift((val & 0x7F) | 0x80);
+        return buffer;
+      };
+
+      let trackBytes = [
+        0x00, 0xFF, 0x51, 0x03,
+        (mpqn >> 16) & 0xFF, (mpqn >> 8) & 0xFF, mpqn & 0xFF
+      ];
+
+      let lastTick = 0;
+      events.forEach(ev => {
+        const delta = ev.tick - lastTick;
+        lastTick = ev.tick;
+        trackBytes.push(...writeVarLen(delta), ev.type, ev.note & 0x7F, ev.vel & 0x7F);
+      });
+
+      trackBytes.push(0x00, 0xFF, 0x2F, 0x00);
+
+      const headerBytes = [
+        0x4D, 0x54, 0x68, 0x64,
+        0x00, 0x00, 0x00, 0x06,
+        0x00, 0x00, 0x00, 0x01,
+        (tpq >> 8) & 0xFF, tpq & 0xFF
+      ];
+
+      const trkLen = trackBytes.length;
+      const trackHeader = [
+        0x4D, 0x54, 0x72, 0x6B,
+        (trkLen >> 24) & 0xFF, (trkLen >> 16) & 0xFF, (trkLen >> 8) & 0xFF, trkLen & 0xFF
+      ];
+
+      const midiUint8 = new Uint8Array([...headerBytes, ...trackHeader, ...trackBytes]);
+      const blob = new Blob([midiUint8], { type: 'audio/midi' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${document.getElementById('songTitleInput').value || 'thai_score'}.mid`;
+      a.click();
+    }
+
+    function addMeasureRow() {
+      pushHistory();
+      for (let i = 0; i < 8; i++) {
+        state.measures.push({
+          right: Array.from({ length: 4 }, () => ({ notes: [{ n: '-', o: 0 }], lueam: false })),
+          left: Array.from({ length: 4 }, () => ({ notes: [{ n: '-', o: 0 }], lueam: false }))
+        });
+      }
+      document.getElementById('songMetaBadge').textContent = `${state.measures.length} ห้อง • 4 ช่อง/ห้อง`;
+      renderAll();
+    }
+
+    function removeMeasureRow() {
+      if (state.measures.length <= 8) {
+        alert('ต้องเหลือไว้อย่างน้อย 1 บรรทัด (8 ห้อง)');
+        return;
+      }
+      pushHistory();
+      state.measures.splice(state.measures.length - 8, 8);
+      if (cursor.measure >= state.measures.length) {
+        cursor.measure = state.measures.length - 1;
+        cursor.cell = 0;
+        const flat = cursor.measure * 4;
+        selectionRange = { startFlat: flat, endFlat: flat, hand: cursor.hand };
+      }
+      document.getElementById('songMetaBadge').textContent = `${state.measures.length} ห้อง • 4 ช่อง/ห้อง`;
+      renderAll();
+    }
+
+    function changeChingPattern(pat) {
+      state.chingPattern = pat;
+      renderAll();
+    }
+
+    function toggleWesternNoteNames() {
+      state.showWesternNoteNames = !state.showWesternNoteNames;
+      const btn = document.getElementById('noteNameToggleBtn');
+      btn.classList.toggle('active', state.showWesternNoteNames);
+      btn.textContent = state.showWesternNoteNames ? '🔤 ชื่อโน้ต: เปิด' : '🔤 ชื่อโน้ต: ปิด';
+      renderWesternStaff();
+    }
+
+    function toggleMelodyAudio() {
+      state.melodyOn = !state.melodyOn;
+      const btn = document.getElementById('melodyMuteBtn');
+      btn.classList.toggle('active', state.melodyOn);
+      btn.textContent = state.melodyOn ? '🎵 เสียงดนตรี เปิด' : '🔇 เสียงดนตรี ปิด (โหมดซ้อม)';
+    }
+
+    function setPitchStandard(std) {
+      state.pitchStd = std;
+      ['pitchChromaticBtn', 'pitchRoyalBtn', 'pitchSilpaBtn'].forEach(id => {
+        document.getElementById(id).className = 'px-2.5 py-1 rounded-lg text-[11px] font-semibold text-stone-600';
+      });
+      const mapId = { chromatic: 'pitchChromaticBtn', royal: 'pitchRoyalBtn', silpa: 'pitchSilpaBtn' };
+      document.getElementById(mapId[std]).className = 'px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-400 text-stone-950';
+      playSingleNote('ด', 0, true);
+    }
+
+    function setViewMode(mode) {
+      const thaiPane = document.getElementById('thaiPane');
+      const westPane = document.getElementById('westernPane');
+      ['viewThaiBtn', 'viewSplitBtn', 'viewWesternBtn'].forEach(id => {
+        document.getElementById(id).className = 'px-2.5 py-1 rounded-lg font-semibold text-stone-600 hover:text-stone-900 transition';
+      });
+
+      if (mode === 'thai') {
+        thaiPane.style.display = 'flex';
+        westPane.style.display = 'none';
+        document.getElementById('viewThaiBtn').className = 'px-2.5 py-1 rounded-lg font-bold bg-amber-400 text-stone-950 shadow-2xs transition';
+      } else if (mode === 'western') {
+        thaiPane.style.display = 'none';
+        westPane.style.display = 'flex';
+        westPane.style.height = '100%';
+        document.getElementById('viewWesternBtn').className = 'px-2.5 py-1 rounded-lg font-bold bg-amber-400 text-stone-950 shadow-2xs transition';
+      } else {
+        thaiPane.style.display = 'flex';
+        westPane.style.display = 'flex';
+        westPane.style.height = '46%';
+        document.getElementById('viewSplitBtn').className = 'px-2.5 py-1 rounded-lg font-bold bg-amber-400 text-stone-950 shadow-2xs transition';
+      }
+    }
+
+    function changeTrackMode(mode) {
+      state.trackMode = mode;
+      cursor.hand = 'right';
+      selectionRange.hand = 'right';
+      renderAll();
+    }
+
+    function setStaffMode(mode) {
+      state.staffMode = mode;
+      document.getElementById('staffGrandBtn').className = mode === 'grand'
+        ? 'px-2 py-0.5 rounded text-[11px] font-bold bg-amber-400 text-stone-950'
+        : 'px-2 py-0.5 rounded text-[11px] font-semibold text-stone-600';
+      document.getElementById('staffSingleBtn').className = mode === 'single'
+        ? 'px-2 py-0.5 rounded text-[11px] font-bold bg-amber-400 text-stone-950'
+        : 'px-2 py-0.5 rounded text-[11px] font-semibold text-stone-600';
+      renderWesternStaff();
+    }
+
+    function setBarMode(mode) {
+      state.barMode = mode;
+      document.getElementById('barEndBtn').className = mode === 'end'
+        ? 'px-2 py-0.5 rounded text-[11px] font-bold bg-amber-400 text-stone-950'
+        : 'px-2 py-0.5 rounded text-[11px] font-semibold text-stone-600';
+      document.getElementById('barStartBtn').className = mode === 'start'
+        ? 'px-2 py-0.5 rounded text-[11px] font-bold bg-amber-400 text-stone-950'
+        : 'px-2 py-0.5 rounded text-[11px] font-semibold text-stone-600';
+
+      document.getElementById('barRuleDesc').textContent = mode === 'start'
+        ? 'จังหวะตกต้นห้อง: โน้ตจังหวะตกของไทย (ช่องที่ 4) จะถูกจัดลงเป็นจังหวะที่ 1 แรกสุดของห้องสากล'
+        : 'จังหวะตกท้ายห้อง: แปลง 4 ช่องของห้องไทยลงใน 1 ห้องสากลตรงตัว (จังหวะตกอยู่ท้ายห้อง)';
+      renderWesternStaff();
+    }
+
+    // การขยายแบบอยู่กึ่งกลางและเลื่อนดูได้รอบด้าน (ข้อ 4)
+    function changeThaiZoom(delta) {
+      state.thaiZoom = Math.max(70, Math.min(160, state.thaiZoom + delta));
+      document.getElementById('thaiZoomLabel').textContent = `${state.thaiZoom}%`;
+      document.getElementById('presentZoomLabel').textContent = `${state.thaiZoom}%`;
+      const wrapper = document.getElementById('thaiSheetWrapper');
+      wrapper.style.zoom = `${state.thaiZoom}%`;
+    }
+
+    function changeWesternZoom(delta) {
+      state.westernZoom = Math.max(70, Math.min(160, state.westernZoom + delta));
+      document.getElementById('westernZoomLabel').textContent = `${state.westernZoom}%`;
+      const wrapper = document.getElementById('westernSheetWrapper');
+      wrapper.style.zoom = `${state.westernZoom}%`;
+    }
+
+    // =========================================================
+    // 9. ระบบเล่นเพลง
+    // =========================================================
+    function togglePlay() {
+      if (isPlaying) stopPlay();
+      else startPlay();
+    }
+
+    function getStartTickFromInput() {
+      const mNum = parseInt(document.getElementById('startMeasureInput').value, 10) || 1;
+      const clampedM = Math.max(1, Math.min(state.measures.length, mNum));
+      document.getElementById('startMeasureInput').value = clampedM;
+      return (clampedM - 1) * 4;
+    }
+
+    function startPlay() {
+      getAudioCtx();
+      isPlaying = true;
+      playTick = getStartTickFromInput();
+      document.getElementById('btnPlay').innerHTML = '<span>⏸</span> หยุด';
+      stepPlay();
+    }
+
+    function stepPlay() {
+      if (!isPlaying) return;
+      const maxTicks = state.measures.length * 4;
+      if (playTick >= maxTicks) {
+        if (state.loopOn) playTick = getStartTickFromInput();
+        else { stopPlay(); return; }
+      }
+
+      const mIdx = Math.floor(playTick / 4);
+      const cIdx = playTick % 4;
+      const intervalMs = (60 / state.bpm / 2) * 1000;
+
+      document.querySelectorAll('.tn-cell.playing').forEach(el => el.classList.remove('playing'));
+      document.querySelectorAll(`.tn-cell[data-m="${mIdx}"][data-c="${cIdx}"]`).forEach(el => {
+        el.classList.add('playing');
+      });
+
+      if (cIdx === 0) renderWesternStaff(mIdx);
+
+      const m = state.measures[mIdx];
+      playCellNotes(m.right[cIdx], intervalMs, false);
+      if (state.trackMode === 'double') {
+        playCellNotes(m.left[cIdx], intervalMs, false);
+      }
+
+      if (cIdx === 3 && state.chingPattern !== 'none') {
+        if (state.chingPattern === '2_4') {
+          if (mIdx % 2 === 1) playChingSound('open');
+          else if (mIdx > 0) playChingSound('close');
+        } else if (state.chingPattern === '4_4') {
+          const mod = mIdx % 4;
+          if (mod === 1) playChingSound('open');
+          else if (mod === 3) playChingSound('close');
+        } else if (state.chingPattern === '3_4') {
+          const mod = mIdx % 3;
+          if (mod === 1) playChingSound('open');
+          else if (mod === 2) playChingSound('close');
+        }
+      }
+
+      playTick++;
+      playTimer = setTimeout(stepPlay, intervalMs);
+    }
+
+    function stopPlay() {
+      isPlaying = false;
+      clearTimeout(playTimer);
+      document.querySelectorAll('.tn-cell.playing').forEach(el => el.classList.remove('playing'));
+      document.getElementById('btnPlay').innerHTML = '<span>▶</span> เล่น';
+      renderWesternStaff(-1);
+    }
+
+    function changeBPM(delta) {
+      setBPMDirect(state.bpm + delta);
+    }
+
+    function setBPMDirect(val) {
+      const num = parseInt(val, 10);
+      state.bpm = isNaN(num) ? 65 : Math.max(30, Math.min(240, num));
+      document.getElementById('bpmInput').value = state.bpm;
+    }
+
+    function toggleLoop() {
+      state.loopOn = !state.loopOn;
+      const btn = document.getElementById('loopBtn');
+      btn.classList.toggle('active', state.loopOn);
+      btn.textContent = state.loopOn ? '↻ ซ้ำท่อน เปิด' : '↻ ซ้ำท่อน ปิด';
+    }
+
+    function resetToNew() {
+      if (confirm('สร้างกระดาษโน้ตใหม่ (ล้างโน้ตทั้งหมด)?')) {
+        pushHistory();
+        state.measures.forEach(m => {
+          m.right.forEach(c => { c.notes = [{ n: '-', o: 0 }]; c.lueam = false; });
+          m.left.forEach(c => { c.notes = [{ n: '-', o: 0 }]; c.lueam = false; });
+        });
+        document.getElementById('songTitleInput').value = 'เพลงใหม่';
+        renderAll();
+      }
+    }
+
+    function exportJSON() {
+      const data = {
+        title: document.getElementById('songTitleInput').value,
+        section: document.getElementById('sectionTitleInput').value,
+        trackMode: state.trackMode,
+        chingPattern: state.chingPattern,
+        bpm: state.bpm,
+        measures: state.measures
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${data.title || 'thai_score'}.json`;
+      a.click();
+    }
+
+    function renderAll() {
+      renderThaiSheet();
+      renderWesternStaff();
+      updateCursorUI();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadPresetSong('lao_chiang');
+    });
+  </script>
+</body>
+</html>
