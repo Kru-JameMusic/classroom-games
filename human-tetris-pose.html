@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Human Tetris : เกมทำท่าทางตามเงา (Pose Silhouette)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Prompt', sans-serif; }
+    body {
+      background: #090d16;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px;
+      gap: 10px;
+    }
+
+    /* แถบควบคุมด้านบน */
+    .control-bar {
+      width: 100%;
+      max-width: 1280px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 10px 16px;
+      border-radius: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .title { font-size: 18px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 6px; }
+    .controls-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    select, input[type="number"], input[type="text"], button {
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    button { border: none; cursor: pointer; transition: transform 0.1s, filter 0.2s; }
+    button:active { transform: scale(0.95); }
+    button:hover { filter: brightness(1.1); }
+    .btn-cam { background: #3b82f6; }
+    .btn-edit { background: #f59e0b; color: #000; font-weight: 700; }
+    .btn-play { background: #10b981; color: #052e16; font-weight: 800; font-size: 14px; padding: 7px 16px; }
+    .btn-full { background: #6366f1; color: #fff; font-weight: 700; }
+
+    /* เวทีเกมหลัก */
+    .stage-container {
+      position: relative;
+      width: 100%;
+      max-width: 1280px;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 3px solid #334155;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.85);
+    }
+    .stage-container:fullscreen {
+      max-width: 100vw;
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      border: none;
+    }
+
+    video { display: none; }
+    canvas {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* HUD ด้านบนในจอเกม */
+    .hud-top {
+      position: absolute;
+      top: 16px; left: 20px; right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      z-index: 15;
+      pointer-events: none;
+    }
+    .stat-box {
+      background: rgba(15, 23, 42, 0.92);
+      border: 2px solid #38bdf8;
+      padding: 10px 20px;
+      border-radius: 16px;
+      text-align: center;
+      min-width: 145px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+    }
+    .stat-label { font-size: 12px; color: #94a3b8; font-weight: 700; }
+    .stat-val { font-size: 32px; font-weight: 900; color: #38bdf8; line-height: 1.1; }
+
+    /* การ์ดชื่อท่าตรงกลางบน */
+    .pose-banner {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+      border: 3px solid #facc15;
+      padding: 10px 28px;
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.8);
+      max-width: 55%;
+    }
+    .pose-sub { font-size: 13px; color: #fde047; font-weight: 700; }
+    .pose-name { font-size: clamp(22px, 2.5vw, 34px); font-weight: 900; color: #fff; margin: 2px 0; }
+    .match-bar-track {
+      width: 240px;
+      height: 12px;
+      background: #0f172a;
+      border-radius: 999px;
+      margin: 6px auto 0;
+      overflow: hidden;
+      border: 1px solid #475569;
+    }
+    .match-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #f59e0b, #10b981);
+      transition: width 0.1s;
+    }
+
+    .timer-box {
+      background: rgba(15, 23, 42, 0.92);
+      border: 2px solid #f43f5e;
+      padding: 10px 20px;
+      border-radius: 16px;
+      text-align: center;
+      min-width: 145px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+    }
+    .timer-val { font-size: 32px; font-weight: 900; color: #fb7185; line-height: 1.1; font-variant-numeric: tabular-nums; }
+
+    /* แถบปุ่มลอยด้านล่างในเวทีเกม */
+    .stage-bottom-bar {
+      position: absolute;
+      bottom: 14px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 20;
+      pointer-events: none;
+      gap: 10px;
+    }
+    .guide-pill {
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid #475569;
+      padding: 7px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      color: #e2e8f0;
+    }
+    .floating-btns {
+      display: flex;
+      gap: 8px;
+      pointer-events: auto;
+    }
+    .floating-btns button {
+      padding: 8px 16px;
+      font-size: 14px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.75);
+    }
+
+    /* ป๊อปอัปผ่านด่าน / ไม่ผ่านด่าน */
+    .wall-result-banner {
+      display: none;
+      position: absolute;
+      top: 52%; left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 20px 44px;
+      border-radius: 24px;
+      font-size: 36px;
+      font-weight: 900;
+      text-align: center;
+      z-index: 25;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+      animation: popIn 0.25s ease-out;
+    }
+    .wall-result-banner.pass {
+      background: rgba(6, 78, 59, 0.95);
+      border: 4px solid #34d399;
+      color: #fff;
+    }
+    .wall-result-banner.fail {
+      background: rgba(127, 29, 29, 0.95);
+      border: 4px solid #f87171;
+      color: #fff;
+    }
+
+    /* หน้าจอ Overlay เริ่มต้น / สรุปผล */
+    .overlay-screen {
+      position: absolute;
+      inset: 0;
+      background: rgba(9, 13, 22, 0.85);
+      backdrop-filter: blur(5px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      z-index: 30;
+      padding: 24px;
+    }
+    .summary-card {
+      background: #1e293b;
+      border: 4px solid #facc15;
+      padding: 32px 44px;
+      border-radius: 26px;
+      max-width: 640px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+    }
+
+    /* หน้าต่างจัดการท่าทางและบันทึกท่าใหม่จากกล้อง */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 13, 22, 0.92);
+      backdrop-filter: blur(6px);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-box {
+      background: #1e293b;
+      border: 2px solid #facc15;
+      border-radius: 22px;
+      width: 100%;
+      max-width: 900px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .modal-header {
+      padding: 14px 20px;
+      background: #0f172a;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .modal-body {
+      padding: 16px 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .pose-item-row {
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 10px 14px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .modal-footer {
+      padding: 14px 20px;
+      background: #0f172a;
+      border-top: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    @keyframes popIn { 0% { transform: translate(-50%, -50%) scale(0.5); } 100% { transform: translate(-50%, -50%) scale(1); } }
+  </style>
+</head>
+<body>
+
+  <!-- แถบควบคุมด้านบน -->
+  <div class="control-bar">
+    <div class="title">🧱 Human Tetris : เกมทำท่าทางตามเงา</div>
+    <div class="controls-group">
+      <select id="cameraSelect"></select>
+      <button type="button" class="btn-cam" id="btnOpenCam" onclick="initPoseCamera()">📷 เปิดกล้อง & โหลด AI</button>
+
+      <select id="toleranceSelect" title="เลือกระดับความแม่นยำในการทาบเงา">
+        <option value="0.13">ระดับ: ง่าย (เด็กเล็ก ป.1-ป.3)</option>
+        <option value="0.095" selected>ระดับ: ปานกลาง (แนะนำ)</option>
+        <option value="0.065">ระดับ: ยาก (ต้องเป๊ะมาก)</option>
+      </select>
+
+      <label style="font-size:12px; color:#cbd5e1;">เวลา/ท่า:</label>
+      <select id="wallTimeSelect">
+        <option value="5">5 วินาที (เร็ว)</option>
+        <option value="8" selected>8 วินาที (พอดี)</option>
+        <option value="12">12 วินาที (ช้า)</option>
+      </select>
+
+      <button type="button" class="btn-edit" onclick="openPoseManager()">⚙️ จัดการท่า / อัดท่าใหม่</button>
+      <button type="button" class="btn-play" onclick="startGame()">▶ เริ่มเล่น!</button>
+      <button type="button" class="btn-full" onclick="toggleFullscreen()">⛶ เต็มจอ</button>
+    </div>
+  </div>
+
+  <!-- เวทีเกม -->
+  <div class="stage-container" id="stageContainer">
+    <video id="videoInput" playsinline></video>
+    <canvas id="gameCanvas" width="1280" height="720"></canvas>
+
+    <!-- HUD ด้านบน -->
+    <div class="hud-top">
+      <div class="stat-box">
+        <div class="stat-label">ด่านที่ / คะแนน</div>
+        <div class="stat-val"><span id="scoreVal">0</span></div>
+        <div style="font-size:12px; color:#cbd5e1; margin-top:2px;">ท่าที่ <span id="stageNum">1</span> / <span id="totalStages">10</span></div>
+      </div>
+
+      <div class="pose-banner">
+        <div class="pose-sub" id="poseHintText">จัดท่าทางให้ตรงกับเงาบนหน้าจอ</div>
+        <div class="pose-name" id="poseTitleDisplay">ท่าตัว Y (ชูสองแขน)</div>
+        <div class="match-bar-track"><div class="match-bar-fill" id="matchBarFill"></div></div>
+        <div style="font-size:12px; color:#34d399; font-weight:700; margin-top:3px;">ความแม่นยำ: <span id="matchPctText">0%</span></div>
+      </div>
+
+      <div class="timer-box">
+        <div class="stat-label">⏳ กำแพงจะชนใน</div>
+        <div class="timer-val" id="wallTimerDisplay">8.0</div>
+        <div style="font-size:12px; color:#fca5a5; margin-top:2px;">วินาที</div>
+      </div>
+    </div>
+
+    <div class="wall-result-banner" id="wallResultBanner">🎉 ผ่านกำแพง! +100</div>
+
+    <!-- แถบควบคุมล่างในเวทีเกม -->
+    <div class="stage-bottom-bar">
+      <div class="guide-pill">
+        🧍 ยืนถอยหลังให้เห็นครึ่งตัวบนถึงเข่า แล้วขยับแขนขาให้เข้ากับวงกลมเป้าหมายสีเหลือง
+      </div>
+      <div class="floating-btns">
+        <button type="button" class="btn-edit" onclick="openPoseManager()">⚙️ จัดการท่า</button>
+        <button type="button" class="btn-play" onclick="startGame()">▶ เริ่มเล่น / เล่นใหม่</button>
+        <button type="button" class="btn-full" onclick="toggleFullscreen()">⛶ เต็มจอ</button>
+      </div>
+    </div>
+
+    <!-- หน้าจอเริ่มต้น / สรุปผล -->
+    <div class="overlay-screen" id="overlayScreen">
+      <div class="summary-card" id="overlayCard">
+        <div style="font-size: 60px;">🧱🧍</div>
+        <h2 style="font-size: 30px; margin: 8px 0;">Human Tetris : เกมทำท่าทางตามเงา</h2>
+        <p style="color: #cbd5e1; font-size: 16px; line-height: 1.6; margin-bottom: 22px;">
+          1. กดปุ่ม <strong>"📷 เปิดกล้อง & โหลด AI"</strong> ด้านบน<br>
+          2. ถอยหลังให้เห็นลำตัวชัดเจนในจอ<br>
+          3. ทำท่าทางให้ตรงกับหุ่นเงาและจุดเป้าหมายให้ครบก่อนกำแพงจะเลื่อนมาชน!
+        </p>
+        <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+          <button type="button" class="btn-edit" style="font-size:16px; padding:12px 20px;" onclick="openPoseManager()">⚙️ จัดการท่า / อัดท่าใหม่</button>
+          <button type="button" class="btn-play" style="font-size:18px; padding:12px 30px;" onclick="startGame()">▶ เริ่มเล่นเลย!</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- หน้าต่างจัดการท่าทางและบันทึกท่าใหม่จากกล้อง -->
+  <div class="modal-backdrop" id="poseManagerModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 style="font-size:18px; color:#facc15;">⚙️ จัดการชุดท่าทาง (Pose Library)</h2>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <input type="file" id="importPoseJson" accept=".json" style="display:none;" onchange="importPosesFile(event)">
+          <button type="button" style="background:#0ea5e9; color:#fff;" onclick="document.getElementById('importPoseJson').click()">📂 นำเข้า (.json)</button>
+          <button type="button" style="background:#6366f1; color:#fff;" onclick="exportPosesFile()">💾 ส่งออก (.json)</button>
+          <button type="button" style="background:#475569; color:#fff;" onclick="resetDefaultPoses()">🔄 คืนค่าเริ่มต้น</button>
+        </div>
+      </div>
+
+      <!-- ส่วนบันทึกท่าใหม่สดๆ จากกล้อง -->
+      <div style="background:#0f172a; padding:12px 20px; border-bottom:1px solid #334155; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <span style="font-weight:800; color:#38bdf8;">📸 เพิ่มท่าใหม่จากกล้อง:</span>
+        <input type="text" id="newPoseNameInput" placeholder="ตั้งชื่อท่า เช่น ท่าซูเปอร์แมน, ตัวอักษร K" style="flex:1; min-width:200px;">
+        <button type="button" style="background:#10b981; color:#052e16; font-weight:800;" onclick="capturePoseFromCamera()">📸 จับท่าปัจจุบันในกล้อง (นับ 3 วิ)</button>
+        <span id="captureCountdownStatus" style="font-weight:800; color:#facc15;"></span>
+      </div>
+
+      <div class="modal-body" id="poseListContainer"></div>
+
+      <div class="modal-footer">
+        <span style="font-size:12px; color:#94a3b8;">* แนะนำให้เปิดกล้องก่อน หากต้องการใช้ปุ่มบันทึกท่าใหม่จากหน้ากล้อง</span>
+        <div style="display:flex; gap:10px;">
+          <button type="button" style="background:#475569; color:#fff; padding:8px 18px;" onclick="closePoseManager(false)">ปิด</button>
+          <button type="button" style="background:#10b981; color:#052e16; font-weight:800; padding:8px 22px;" onclick="closePoseManager(true)">✅ บันทึกชุดท่าทาง</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { PoseLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+
+    const STORAGE_KEY = "human_tetris_poses_v1";
+
+    const defaultPoses = [
+      {
+        name: "ท่าตัว Y (ชูสองแขนขึ้นเฉียง)",
+        hint: "ยืนตรงกลางแล้วชูแขนทั้งสองข้างขึ้นเป็นรูปตัว Y",
+        joints: {
+          nose: { x: 0.50, y: 0.30 },
+          lShoulder: { x: 0.43, y: 0.45 },
+          rShoulder: { x: 0.57, y: 0.45 },
+          lElbow: { x: 0.35, y: 0.32 },
+          rElbow: { x: 0.65, y: 0.32 },
+          lWrist: { x: 0.28, y: 0.18 },
+          rWrist: { x: 0.72, y: 0.18 },
+          lHip: { x: 0.45, y: 0.72 },
+          rHip: { x: 0.55, y: 0.72 }
+        }
+      },
+      {
+        name: "ท่าตัว T (กางแขนตรงระดับไหล่)",
+        hint: "กางแขนซ้ายและขวาออกด้านข้างให้ขนานกับพื้น",
+        joints: {
+          nose: { x: 0.50, y: 0.30 },
+          lShoulder: { x: 0.43, y: 0.45 },
+          rShoulder: { x: 0.57, y: 0.45 },
+          lElbow: { x: 0.31, y: 0.45 },
+          rElbow: { x: 0.69, y: 0.45 },
+          lWrist: { x: 0.20, y: 0.45 },
+          rWrist: { x: 0.80, y: 0.45 },
+          lHip: { x: 0.45, y: 0.72 },
+          rHip: { x: 0.55, y: 0.72 }
+        }
+      },
+      {
+        name: "ท่าชูมือขวา (ยกมือฝั่งขวาของจอ)",
+        hint: "ชูแขนฝั่งขวาขึ้นเหนือศีรษะ ส่วนแขนซ้ายแนบลำตัว",
+        joints: {
+          nose: { x: 0.50, y: 0.30 },
+          lShoulder: { x: 0.43, y: 0.45 },
+          rShoulder: { x: 0.57, y: 0.45 },
+          lElbow: { x: 0.40, y: 0.60 },
+          rElbow: { x: 0.62, y: 0.30 },
+          lWrist: { x: 0.40, y: 0.75 },
+          rWrist: { x: 0.62, y: 0.15 },
+          lHip: { x: 0.45, y: 0.72 },
+          rHip: { x: 0.55, y: 0.72 }
+        }
+      },
+      {
+        name: "ท่าชูมือซ้าย (ยกมือฝั่งซ้ายของจอ)",
+        hint: "ชูแขนฝั่งซ้ายขึ้นเหนือศีรษะ ส่วนแขนขวาแนบลำตัว",
+        joints: {
+          nose: { x: 0.50, y: 0.30 },
+          lShoulder: { x: 0.43, y: 0.45 },
+          rShoulder: { x: 0.57, y: 0.45 },
+          lElbow: { x: 0.38, y: 0.30 },
+          rElbow: { x: 0.60, y: 0.60 },
+          lWrist: { x: 0.38, y: 0.15 },
+          rWrist: { x: 0.60, y: 0.75 },
+          lHip: { x: 0.45, y: 0.72 },
+          rHip: { x: 0.55, y: 0.72 }
+        }
+      },
+      {
+        name: "ท่ากากบาท (ไขว้แขนรูปตัว X)",
+        hint: "ยกแขนทั้งสองข้างมาไขว้กันบริเวณหน้าอก",
+        joints: {
+          nose: { x: 0.50, y: 0.28 },
+          lShoulder: { x: 0.43, y: 0.45 },
+          rShoulder: { x: 0.57, y: 0.45 },
+          lElbow: { x: 0.44, y: 0.52 },
+          rElbow: { x: 0.56, y: 0.52 },
+          lWrist: { x: 0.56, y: 0.38 },
+          rWrist: { x: 0.44, y: 0.38 },
+          lHip: { x: 0.45, y: 0.72 },
+          rHip: { x: 0.55, y: 0.72 }
+        }
+      },
+      {
+        name: "ท่าเอียงตัวหลบซ้าย (Lean Left)",
+        hint: "ขยับลำตัวไปทางฝั่งซ้ายของจอพร้อมชูแขนขึ้น",
+        joints: {
+          nose: { x: 0.30, y: 0.32 },
+          lShoulder: { x: 0.23, y: 0.46 },
+          rShoulder: { x: 0.37, y: 0.46 },
+          lElbow: { x: 0.18, y: 0.34 },
+          rElbow: { x: 0.44, y: 0.34 },
+          lWrist: { x: 0.16, y: 0.20 },
+          rWrist: { x: 0.46, y: 0.20 },
+          lHip: { x: 0.26, y: 0.72 },
+          rHip: { x: 0.36, y: 0.72 }
+        }
+      },
+      {
+        name: "ท่าเอียงตัวหลบขวา (Lean Right)",
+        hint: "ขยับลำตัวไปทางฝั่งขวาของจอพร้อมชูแขนขึ้น",
+        joints: {
+          nose: { x: 0.70, y: 0.32 },
+          lShoulder: { x: 0.63, y: 0.46 },
+          rShoulder: { x: 0.77, y: 0.46 },
+          lElbow: { x: 0.56, y: 0.34 },
+          rElbow: { x: 0.82, y: 0.34 },
+          lWrist: { x: 0.54, y: 0.20 },
+          rWrist: { x: 0.84, y: 0.20 },
+          lHip: { x: 0.64, y: 0.72 },
+          rHip: { x: 0.74, y: 0.72 }
+        }
+      },
+      {
+        name: "ท่าย่อตัวหลบกำแพงบน (Squat Duck)",
+        hint: "ย่อเข่าลดศีรษะลงต่ำให้พ้นขอบกำแพงด้านบน!",
+        joints: {
+          nose: { x: 0.50, y: 0.55 },
+          lShoulder: { x: 0.43, y: 0.68 },
+          rShoulder: { x: 0.57, y: 0.68 },
+          lElbow: { x: 0.36, y: 0.62 },
+          rElbow: { x: 0.64, y: 0.62 },
+          lWrist: { x: 0.42, y: 0.52 },
+          rWrist: { x: 0.58, y: 0.52 },
+          lHip: { x: 0.45, y: 0.86 },
+          rHip: { x: 0.55, y: 0.86 }
+        }
+      },
+      {
+        name: "ท่าหุ่นยนต์ (แขนซ้ายขึ้น แขนขวาลง)",
+        hint: "ตั้งศอกขวาขึ้น 90 องศา และหักศอกซ้ายลง 90 องศา",
+        joints: {
+          nose: { x: 0.50, y: 0.30 },
+          lShoulder: { x: 0.43, y: 0.45 },
+          rShoulder: { x: 0.57, y: 0.45 },
+          lElbow: { x: 0.31, y: 0.45 },
+          rElbow: { x: 0.69, y: 0.45 },
+          lWrist: { x: 0.31, y: 0.65 },
+          rWrist: { x: 0.69, y: 0.25 },
+          lHip: { x: 0.45, y: 0.72 },
+          rHip: { x: 0.55, y: 0.72 }
+        }
+      },
+      {
+        name: "ท่าดีใจสุดขีด (ชูมือสูงตรง)",
+        hint: "ชูแขนทั้งสองข้างขึ้นตรงแนบใบหู",
+        joints: {
+          nose: { x: 0.50, y: 0.32 },
+          lShoulder: { x: 0.43, y: 0.46 },
+          rShoulder: { x: 0.57, y: 0.46 },
+          lElbow: { x: 0.41, y: 0.30 },
+          rElbow: { x: 0.59, y: 0.30 },
+          lWrist: { x: 0.41, y: 0.14 },
+          rWrist: { x: 0.59, y: 0.14 },
+          lHip: { x: 0.45, y: 0.72 },
+          rHip: { x: 0.55, y: 0.72 }
+        }
+      }
+    ];
+
+    let poseLibrary = JSON.parse(JSON.stringify(defaultPoses));
+    let draftPoses = null;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) poseLibrary = parsed;
+      }
+    } catch (e) {}
+
+    const video = document.getElementById('videoInput');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const cameraSelect = document.getElementById('cameraSelect');
+
+    let poseLandmarker = null;
+    let isCameraReady = false;
+    let isPlaying = false;
+    let isStageTransition = false;
+    let lastVideoTime = -1;
+    let latestUserJoints = null;
+
+    let stageQueue = [];
+    let currentPoseObj = null;
+    let currentStageIdx = 0;
+    let score = 0;
+    let passedCount = 0;
+    let wallDuration = 8.0;
+    let wallTimeRemaining = 8.0;
+    let holdSuccessFrames = 0;
+    let lastFrameTimestamp = performance.now();
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+
+      if (type === 'pass') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.08);
+        osc.frequency.setValueAtTime(783.99, now + 0.16);
+        osc.frequency.setValueAtTime(1046.5, now + 0.24);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        osc.start(now); osc.stop(now + 0.5);
+      } else if (type === 'crash') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.linearRampToValueAtTime(65, now + 0.45);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        osc.start(now); osc.stop(now + 0.5);
+      } else if (type === 'beep') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, now);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+        osc.start(now); osc.stop(now + 0.12);
+      }
+    }
+
+    async function loadCameras() {
+      try {
+        const temp = await navigator.mediaDevices.getUserMedia({ video: true });
+        temp.getTracks().forEach(t => t.stop());
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cams = devices.filter(d => d.kind === 'videoinput');
+        cameraSelect.innerHTML = '';
+        cams.forEach((cam, idx) => {
+          const opt = document.createElement('option');
+          opt.value = cam.deviceId;
+          opt.text = cam.label || `Camera ${idx + 1}`;
+          if (opt.text.toLowerCase().includes('iriun')) opt.selected = true;
+          cameraSelect.appendChild(opt);
+        });
+      } catch (e) {}
+    }
+
+    window.initPoseCamera = async function() {
+      const btn = document.getElementById('btnOpenCam');
+      btn.textContent = "⏳ กำลังโหลด AI...";
+      btn.disabled = true;
+
+      try {
+        const vision = await FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+        );
+        poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+            delegate: "GPU"
+          },
+          runningMode: "VIDEO",
+          numPoses: 1,
+          minPoseDetectionConfidence: 0.55,
+          minPosePresenceConfidence: 0.55,
+          minTrackingConfidence: 0.55
+        });
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: cameraSelect.value ? { ideal: cameraSelect.value } : undefined, width: 1280, height: 720 },
+          audio: false
+        });
+        video.srcObject = stream;
+        await video.play();
+
+        isCameraReady = true;
+        btn.textContent = "✅ กล้องพร้อมแล้ว";
+        lastFrameTimestamp = performance.now();
+        requestAnimationFrame(renderLoop);
+      } catch (err) {
+        alert("ไม่สามารถเปิดกล้องได้: " + err.message);
+        btn.textContent = "📷 เปิดกล้อง & โหลด AI";
+        btn.disabled = false;
+      }
+    };
+
+    function extractMirroredJoints(lm) {
+      return {
+        nose: { x: 1 - lm[0].x, y: lm[0].y },
+        lShoulder: { x: 1 - lm[12].x, y: lm[12].y },
+        rShoulder: { x: 1 - lm[11].x, y: lm[11].y },
+        lElbow: { x: 1 - lm[14].x, y: lm[14].y },
+        rElbow: { x: 1 - lm[13].x, y: lm[13].y },
+        lWrist: { x: 1 - lm[16].x, y: lm[16].y },
+        rWrist: { x: 1 - lm[15].x, y: lm[15].y },
+        lHip: { x: 1 - lm[24].x, y: lm[24].y },
+        rHip: { x: 1 - lm[23].x, y: lm[23].y }
+      };
+    }
+
+    function renderLoop(now) {
+      const dtSec = Math.min((now - lastFrameTimestamp) / 1000, 0.1);
+      lastFrameTimestamp = now;
+
+      if (isCameraReady && video.readyState >= 2) {
+        ctx.save();
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        ctx.restore();
+
+        if (poseLandmarker && video.currentTime !== lastVideoTime) {
+          lastVideoTime = video.currentTime;
+          const res = poseLandmarker.detectForVideo(video, now);
+          if (res.landmarks && res.landmarks.length > 0) {
+            latestUserJoints = extractMirroredJoints(res.landmarks[0]);
+          } else {
+            latestUserJoints = null;
+          }
+        }
+      }
+
+      if (isPlaying && !isStageTransition && currentPoseObj) {
+        wallTimeRemaining -= dtSec;
+        document.getElementById('wallTimerDisplay').textContent = Math.max(0, wallTimeRemaining).toFixed(1);
+
+        const progressRatio = Math.max(0, Math.min(1, 1 - (wallTimeRemaining / wallDuration)));
+        const matchResult = evaluatePoseMatch(latestUserJoints, currentPoseObj.joints);
+
+        document.getElementById('matchBarFill').style.width = matchResult.pct + '%';
+        document.getElementById('matchPctText').textContent = matchResult.pct + '%';
+
+        drawIncomingWallSilhouette(currentPoseObj.joints, progressRatio, matchResult.pointStatus);
+
+        if (latestUserJoints) {
+          drawPlayerSkeleton(latestUserJoints, matchResult.pointStatus);
+        }
+
+        if (matchResult.allMatched) {
+          holdSuccessFrames += dtSec;
+          if (holdSuccessFrames >= 0.7) {
+            handleWallOutcome(true);
+          }
+        } else {
+          holdSuccessFrames = Math.max(0, holdSuccessFrames - dtSec * 1.5);
+        }
+
+        if (wallTimeRemaining <= 0) {
+          handleWallOutcome(matchResult.pct >= 80);
+        }
+      } else if (!isPlaying && latestUserJoints) {
+        drawPlayerSkeleton(latestUserJoints, {});
+      }
+
+      requestAnimationFrame(renderLoop);
+    }
+
+    function evaluatePoseMatch(user, target) {
+      const checkKeys = ['nose', 'lElbow', 'rElbow', 'lWrist', 'rWrist'];
+      const status = {};
+      if (!user) {
+        checkKeys.forEach(k => status[k] = false);
+        return { pct: 0, allMatched: false, pointStatus: status };
+      }
+
+      const tolerance = parseFloat(document.getElementById('toleranceSelect').value);
+      let matchedCount = 0;
+      let totalScore = 0;
+
+      checkKeys.forEach(k => {
+        const dist = Math.hypot(user[k].x - target[k].x, user[k].y - target[k].y);
+        if (dist <= tolerance) {
+          status[k] = true;
+          matchedCount++;
+          totalScore += 100;
+        } else {
+          status[k] = false;
+          const partial = Math.max(0, 100 - ((dist - tolerance) / (tolerance * 2)) * 100);
+          totalScore += partial;
+        }
+      });
+
+      return {
+        pct: Math.round(totalScore / checkKeys.length),
+        allMatched: matchedCount === checkKeys.length,
+        pointStatus: status
+      };
+    }
+
+    // วาดกำแพงเงา Human Tetris ที่เข้มและคมชัดตัดกับพื้นหลังกล้อง
+    function drawIncomingWallSilhouette(target, progressRatio, pointStatus) {
+      const w = canvas.width;
+      const h = canvas.height;
+      const scale = 0.68 + (0.32 * progressRatio);
+
+      function mapPt(pt) {
+        const cx = 0.5 + (pt.x - 0.5) * scale;
+        const cy = 0.5 + (pt.y - 0.5) * scale;
+        return { x: cx * w, y: cy * h };
+      }
+
+      const pNose = mapPt(target.nose);
+      const pLS = mapPt(target.lShoulder);
+      const pRS = mapPt(target.rShoulder);
+      const pLE = mapPt(target.lElbow);
+      const pRE = mapPt(target.rElbow);
+      const pLW = mapPt(target.lWrist);
+      const pRW = mapPt(target.rWrist);
+      const pLH = mapPt(target.lHip);
+      const pRH = mapPt(target.rHip);
+
+      ctx.save();
+
+      // 1. แผ่นกำแพงโปร่งแสงสีเข้ม ช่วยลดแสงรบกวนจากฉากหลังทำให้เห็นเงาชัดขึ้นมาก
+      const wallMarginX = ((1 - scale) * w) * 0.45;
+      const wallMarginY = ((1 - scale) * h) * 0.35;
+      const wallW = w - wallMarginX * 2;
+      const wallH = h - wallMarginY * 2;
+
+      ctx.fillStyle = 'rgba(9, 13, 22, 0.42)';
+      ctx.fillRect(wallMarginX, wallMarginY, wallW, wallH);
+
+      ctx.strokeStyle = progressRatio > 0.75 ? '#f43f5e' : '#38bdf8';
+      ctx.lineWidth = 5 + progressRatio * 6;
+      ctx.strokeRect(wallMarginX, wallMarginY, wallW, wallH);
+
+      // 2. วาดหุ่นเงาต้นแบบสีสว่างชัดเจน พร้อมเส้นขอบตัดสีเข้ม/ขาว
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      // ชั้นขอบมืดด้านนอกของแขน (Outline) เพื่อให้ตัดกับฉากสว่าง
+      ctx.strokeStyle = 'rgba(9, 13, 22, 0.85)';
+      ctx.lineWidth = 66 * scale;
+      ctx.beginPath();
+      ctx.moveTo(pLW.x, pLW.y);
+      ctx.lineTo(pLE.x, pLE.y);
+      ctx.lineTo(pLS.x, pLS.y);
+      ctx.lineTo(pRS.x, pRS.y);
+      ctx.lineTo(pRE.x, pRE.y);
+      ctx.lineTo(pRW.x, pRW.y);
+      ctx.stroke();
+
+      // ชั้นเนื้อในของแขนสีฟ้าเรืองแสงเข้ม (78% Opacity)
+      ctx.shadowBlur = 22;
+      ctx.shadowColor = '#0ea5e9';
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.78)';
+      ctx.lineWidth = 52 * scale;
+      ctx.beginPath();
+      ctx.moveTo(pLW.x, pLW.y);
+      ctx.lineTo(pLE.x, pLE.y);
+      ctx.lineTo(pLS.x, pLS.y);
+      ctx.lineTo(pRS.x, pRS.y);
+      ctx.lineTo(pRE.x, pRE.y);
+      ctx.lineTo(pRW.x, pRW.y);
+      ctx.stroke();
+
+      // แกนเส้นนำสายตาสีขาวกลางแขน
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.lineWidth = 4 * scale;
+      ctx.beginPath();
+      ctx.moveTo(pLW.x, pLW.y);
+      ctx.lineTo(pLE.x, pLE.y);
+      ctx.lineTo(pLS.x, pLS.y);
+      ctx.lineTo(pRS.x, pRS.y);
+      ctx.lineTo(pRE.x, pRE.y);
+      ctx.lineTo(pRW.x, pRW.y);
+      ctx.stroke();
+
+      // ลำตัวเงาพร้อมขอบตัดชัดเจน
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.68)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(pLS.x, pLS.y);
+      ctx.lineTo(pRS.x, pRS.y);
+      ctx.lineTo(pRH.x, pRH.y);
+      ctx.lineTo(pLH.x, pLH.y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // ศีรษะเงาพร้อมขอบตัดชัดเจน
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.75)';
+      ctx.beginPath();
+      ctx.arc(pNose.x, pNose.y, 48 * scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // 3. วาดวงกลมเป้าหมาย 5 จุดให้เห็นชัดและมีจุดเล็งตรงกลาง
+      const tolerancePx = parseFloat(document.getElementById('toleranceSelect').value) * w;
+      const targetsToDraw = [
+        { key: 'nose', pt: pNose, num: '1' },
+        { key: 'lElbow', pt: pLE, num: '2' },
+        { key: 'rElbow', pt: pRE, num: '3' },
+        { key: 'lWrist', pt: pLW, num: '4' },
+        { key: 'rWrist', pt: pRW, num: '5' }
+      ];
+
+      targetsToDraw.forEach(t => {
+        const isOk = pointStatus[t.key];
+        const radius = tolerancePx * 0.65;
+
+        ctx.beginPath();
+        ctx.arc(t.pt.x, t.pt.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = isOk ? 'rgba(16, 185, 129, 0.65)' : 'rgba(250, 204, 21, 0.42)';
+        ctx.fill();
+
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = isOk ? '#34d399' : '#facc15';
+        ctx.stroke();
+
+        // จุดเล็งกึ่งกลางเป้า
+        ctx.beginPath();
+        ctx.arc(t.pt.x, t.pt.y, 7, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+      });
+
+      ctx.restore();
+    }
+
+    function drawPlayerSkeleton(u, pointStatus) {
+      const w = canvas.width;
+      const h = canvas.height;
+      const lines = [
+        [u.lWrist, u.lElbow], [u.lElbow, u.lShoulder],
+        [u.lShoulder, u.rShoulder],
+        [u.rShoulder, u.rElbow], [u.rElbow, u.rWrist],
+        [u.lShoulder, u.lHip], [u.rShoulder, u.rHip], [u.lHip, u.rHip]
+      ];
+
+      ctx.save();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      lines.forEach(([a, b]) => {
+        ctx.beginPath();
+        ctx.moveTo(a.x * w, a.y * h);
+        ctx.lineTo(b.x * w, b.y * h);
+        ctx.stroke();
+      });
+
+      const dots = ['nose', 'lElbow', 'rElbow', 'lWrist', 'rWrist'];
+      dots.forEach(k => {
+        const isOk = pointStatus[k];
+        ctx.beginPath();
+        ctx.arc(u[k].x * w, u[k].y * h, 13, 0, Math.PI * 2);
+        ctx.fillStyle = isOk ? '#10b981' : '#f43f5e';
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#fff';
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+
+    window.startGame = function() {
+      if (!isCameraReady) {
+        alert("กรุณากดปุ่ม '📷 เปิดกล้อง & โหลด AI' ด้านบนก่อนเริ่มเล่นครับ!");
+        return;
+      }
+      stageQueue = [...poseLibrary].sort(() => Math.random() - 0.5);
+      currentStageIdx = 0;
+      score = 0;
+      passedCount = 0;
+
+      document.getElementById('scoreVal').textContent = '0';
+      document.getElementById('totalStages').textContent = stageQueue.length;
+      document.getElementById('overlayScreen').style.display = 'none';
+      document.getElementById('wallResultBanner').style.display = 'none';
+
+      isPlaying = true;
+      loadNextWall();
+    };
+
+    function loadNextWall() {
+      if (currentStageIdx >= stageQueue.length) {
+        finishAllStages();
+        return;
+      }
+
+      isStageTransition = false;
+      holdSuccessFrames = 0;
+      document.getElementById('wallResultBanner').style.display = 'none';
+
+      currentPoseObj = stageQueue[currentStageIdx];
+      wallDuration = parseFloat(document.getElementById('wallTimeSelect').value) || 8;
+      wallTimeRemaining = wallDuration;
+
+      document.getElementById('stageNum').textContent = currentStageIdx + 1;
+      document.getElementById('poseTitleDisplay').textContent = currentPoseObj.name;
+      document.getElementById('poseHintText').textContent = currentPoseObj.hint || "จัดท่าทางให้ตรงกับเงาบนหน้าจอ";
+    }
+
+    function handleWallOutcome(isSuccess) {
+      isStageTransition = true;
+      const banner = document.getElementById('wallResultBanner');
+
+      if (isSuccess) {
+        passedCount++;
+        const timeBonus = Math.round(wallTimeRemaining * 15);
+        const earned = 100 + timeBonus;
+        score += earned;
+        document.getElementById('scoreVal').textContent = score;
+        playSound('pass');
+
+        banner.className = 'wall-result-banner pass';
+        banner.innerHTML = `🎉 ผ่านกำแพง! +${earned} แต้ม<div style="font-size:18px; color:#fde047; margin-top:4px;">โบนัสความไว +${timeBonus}</div>`;
+      } else {
+        playSound('crash');
+        banner.className = 'wall-result-banner fail';
+        banner.innerHTML = `💥 ชนกำแพง! (0 แต้ม)<div style="font-size:18px; color:#fca5a5; margin-top:4px;">ลองใหม่ในท่าถัดไป!</div>`;
+      }
+
+      banner.style.display = 'block';
+      currentStageIdx++;
+
+      setTimeout(() => {
+        if (isPlaying) loadNextWall();
+      }, 1700);
+    }
+
+    function finishAllStages() {
+      isPlaying = false;
+      playSound('pass');
+      const total = stageQueue.length;
+      const overlay = document.getElementById('overlayScreen');
+      const card = document.getElementById('overlayCard');
+
+      card.innerHTML = `
+        <div style="font-size: 64px;">🏆</div>
+        <h2 style="font-size: 32px; margin-top: 6px;">จบภารกิจ Human Tetris!</h2>
+        <div style="font-size: 56px; font-weight: 900; color: #10b981; margin: 10px 0;">${score.toLocaleString()} แต้ม</div>
+        <p style="font-size: 18px; color: #cbd5e1; margin-bottom: 24px;">
+          ผ่านกำแพงสำเร็จ <strong style="color:#34d399;">${passedCount} / ${total}</strong> ท่า
+        </p>
+        <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+          <button type="button" class="btn-edit" style="font-size:16px; padding:12px 20px;" onclick="openPoseManager()">⚙️ จัดการท่าทาง</button>
+          <button type="button" class="btn-play" style="font-size:18px; padding:12px 30px;" onclick="startGame()">🔄 เล่นรอบใหม่</button>
+        </div>
+      `;
+      overlay.style.display = 'flex';
+    }
+
+    window.openPoseManager = function() {
+      draftPoses = JSON.parse(JSON.stringify(poseLibrary));
+      renderPoseManagerList();
+      document.getElementById('poseManagerModal').style.display = 'flex';
+    };
+
+    window.closePoseManager = function(save) {
+      if (save) {
+        if (draftPoses.length === 0) {
+          alert("ต้องมีท่าทางอย่างน้อย 1 ท่าครับ");
+          return;
+        }
+        poseLibrary = JSON.parse(JSON.stringify(draftPoses));
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(poseLibrary));
+        } catch (e) {}
+      }
+      document.getElementById('poseManagerModal').style.display = 'none';
+    };
+
+    function renderPoseManagerList() {
+      const container = document.getElementById('poseListContainer');
+      container.innerHTML = '';
+
+      draftPoses.forEach((p, idx) => {
+        const row = document.createElement('div');
+        row.className = 'pose-item-row';
+
+        const nameInp = document.createElement('input');
+        nameInp.type = 'text';
+        nameInp.value = p.name;
+        nameInp.style.flex = '1';
+        nameInp.style.minWidth = '200px';
+        nameInp.oninput = (e) => { draftPoses[idx].name = e.target.value; };
+
+        const hintInp = document.createElement('input');
+        hintInp.type = 'text';
+        hintInp.value = p.hint || '';
+        hintInp.placeholder = 'คำแนะนำท่าทาง';
+        hintInp.style.flex = '1.2';
+        hintInp.style.minWidth = '220px';
+        hintInp.oninput = (e) => { draftPoses[idx].hint = e.target.value; };
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.style.background = '#ef4444';
+        delBtn.style.color = '#fff';
+        delBtn.textContent = '🗑️ ลบ';
+        delBtn.onclick = () => {
+          if (draftPoses.length <= 1) return;
+          draftPoses.splice(idx, 1);
+          renderPoseManagerList();
+        };
+
+        row.append(nameInp, hintInp, delBtn);
+        container.appendChild(row);
+      });
+    }
+
+    window.capturePoseFromCamera = function() {
+      if (!isCameraReady || !latestUserJoints) {
+        alert("กรุณากด '📷 เปิดกล้อง & โหลด AI' และยืนให้กล้องตรวจจับโครงกระดูกก่อนบันทึกท่าครับ!");
+        return;
+      }
+      const poseName = document.getElementById('newPoseNameInput').value.trim() || `ท่าพิเศษที่ ${draftPoses.length + 1}`;
+      const statusEl = document.getElementById('captureCountdownStatus');
+
+      let sec = 3;
+      statusEl.textContent = `⏳ เตรียมโพสท่าใน ${sec}...`;
+      playSound('beep');
+
+      const timer = setInterval(() => {
+        sec--;
+        if (sec > 0) {
+          statusEl.textContent = `⏳ เตรียมโพสท่าใน ${sec}...`;
+          playSound('beep');
+        } else {
+          clearInterval(timer);
+          if (latestUserJoints) {
+            const captured = JSON.parse(JSON.stringify(latestUserJoints));
+            Object.keys(captured).forEach(k => {
+              captured[k].x = Math.round(captured[k].x * 1000) / 1000;
+              captured[k].y = Math.round(captured[k].y * 1000) / 1000;
+            });
+            draftPoses.push({
+              name: poseName,
+              hint: "ทำท่าทางตามเงาต้นแบบที่บันทึกไว้",
+              joints: captured
+            });
+            playSound('pass');
+            statusEl.textContent = `✅ บันทึก "${poseName}" สำเร็จ!`;
+            document.getElementById('newPoseNameInput').value = '';
+            renderPoseManagerList();
+          } else {
+            statusEl.textContent = "❌ ไม่พบตัวผู้เล่นในเฟรม ลองใหม่อีกครั้ง";
+          }
+        }
+      }, 1000);
+    };
+
+    window.resetDefaultPoses = function() {
+      if (confirm("ต้องการคืนค่าเป็นท่าทางเริ่มต้น 10 ท่าหรือไม่?")) {
+        draftPoses = JSON.parse(JSON.stringify(defaultPoses));
+        renderPoseManagerList();
+      }
+    };
+
+    window.exportPosesFile = function() {
+      const dataStr = JSON.stringify(draftPoses, null, 2);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ชุดท่าทาง_HumanTetris_${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
+
+    window.importPosesFile = function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (!Array.isArray(parsed) || parsed.length === 0 || !parsed[0].joints) {
+            throw new Error("รูปแบบไฟล์ไม่ถูกต้อง");
+          }
+          draftPoses = parsed;
+          renderPoseManagerList();
+          alert(`นำเข้าชุดท่าทางสำเร็จ ${parsed.length} ท่า!`);
+        } catch (err) {
+          alert("ไม่สามารถนำเข้าไฟล์ได้: กรุณาเลือกไฟล์ .json ที่ส่งออกจากเกมนี้เท่านั้น");
+        }
+        event.target.value = '';
+      };
+      reader.readAsText(file);
+    };
+
+    window.toggleFullscreen = function() {
+      const stage = document.getElementById('stageContainer');
+      if (!document.fullscreenElement) {
+        stage.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    };
+
+    loadCameras();
+  </script>
+</body>
+</html>
