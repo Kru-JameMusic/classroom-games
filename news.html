@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thai Live News Pro (Iriun Webcam)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Prompt', sans-serif; }
+    body {
+      background-color: #090d16;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      gap: 16px;
+    }
+
+    /* กรอบหน้าจอทีวีสัดส่วน 16:9 */
+    .tv-screen {
+      position: relative;
+      width: 960px;
+      height: 540px;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 0 3px #1e293b;
+      cursor: pointer;
+    }
+
+    /* เมื่อกดขยายเต็มจอ (Fullscreen) ให้แสดงเฉพาะหน้า Live เต็มพื้นที่ */
+    .tv-screen:fullscreen {
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      border: none;
+      cursor: default;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* มุมซ้ายบน: ป้ายรายงานสดจากพื้นที่ (มีแอนิเมชันยืดออก) */
+    .location-bug {
+      position: absolute;
+      top: 3.8%;
+      left: 2.8%;
+      display: flex;
+      align-items: center;
+      background: linear-gradient(90deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.85));
+      border-left: 5px solid #ef4444;
+      padding: 6px 16px;
+      border-radius: 0 6px 6px 0;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+      z-index: 10;
+      animation: slideInLeft 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+    }
+    .location-bug::after {
+      content: "";
+      position: absolute;
+      top: 0; left: -100%;
+      width: 50%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      animation: lightSweep 4s infinite;
+    }
+    .location-bug span {
+      font-size: clamp(13px, 1.3vw, 20px);
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    /* มุมขวาบน: โลโก้ช่อง/รายการ + ป้าย สด + นาฬิกา */
+    .channel-bug {
+      position: absolute;
+      top: 3.8%;
+      right: 2.8%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      z-index: 10;
+      animation: fadeInDown 0.7s ease-out;
+    }
+
+    /* กล่องโลโก้ข้อความเริ่มต้น */
+    .channel-logo-text {
+      position: relative;
+      background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
+      border: 2px solid #60a5fa;
+      padding: 4px 14px;
+      border-radius: 6px;
+      font-size: clamp(18px, 1.8vw, 28px);
+      font-weight: 800;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+    }
+    .channel-logo-text::after {
+      content: "";
+      position: absolute;
+      top: 0; left: -100%;
+      width: 60%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+      animation: lightSweep 3.5s infinite;
+    }
+    .channel-logo-text .hd-badge {
+      background: #facc15;
+      color: #000;
+      font-size: 0.55em;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    /* รูปภาพโลโก้ที่อัปโหลดเอง (มีแอนิเมชันลอยนุ่มๆ) */
+    .custom-logo-img {
+      display: none;
+      max-height: 75px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.75));
+      animation: floatLogo 3.5s ease-in-out infinite;
+    }
+
+    .live-clock-row {
+      display: flex;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.82);
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    .live-pill {
+      background: #dc2626;
+      color: #fff;
+      font-size: clamp(12px, 1.1vw, 16px);
+      font-weight: 700;
+      padding: 3px 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: #fff;
+      border-radius: 50%;
+      animation: pulseLive 1.2s infinite;
+    }
+    .clock-text {
+      padding: 3px 10px;
+      font-size: clamp(12px, 1.1vw, 16px);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: #f8fafc;
+    }
+
+    /* แถบกราฟิกพาดหัวข่าวด้านล่าง (Lower Third) พร้อมแอนิเมชันซ่อน/แสดง */
+    .lower-third-wrapper {
+      position: absolute;
+      bottom: 8.2%;
+      left: 2.8%;
+      right: 2.8%;
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+      filter: drop-shadow(0 8px 20px rgba(0,0,0,0.8));
+      transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.45s ease;
+    }
+    .lower-third-wrapper.hidden {
+      transform: translateY(130%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* ป้ายชื่อรายการ / ผู้ประกาศ */
+    .program-bar {
+      display: flex;
+      align-items: center;
+      width: fit-content;
+    }
+    .program-name {
+      background: linear-gradient(90deg, #b91c1c, #ef4444);
+      color: #fff;
+      font-size: clamp(13px, 1.2vw, 18px);
+      font-weight: 700;
+      padding: 4px 16px;
+      border-radius: 6px 6px 0 0;
+    }
+    .anchor-tag {
+      background: #f8fafc;
+      color: #0f172a;
+      font-size: clamp(12px, 1.1vw, 17px);
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 0 6px 0 0;
+    }
+
+    /* แถบพาดหัวข่าวหลัก (มีแสงวิ่งผ่าน) */
+    .headline-box {
+      position: relative;
+      background: linear-gradient(90deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 58, 138, 0.94) 100%);
+      border-left: 8px solid #facc15;
+      padding: 10px 22px;
+      border-radius: 0 8px 0 0;
+      overflow: hidden;
+    }
+    .headline-box::after {
+      content: "";
+      position: absolute;
+      top: 0; left: -100%;
+      width: 40%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(250, 204, 21, 0.16), transparent);
+      animation: lightSweep 5s infinite;
+    }
+    .headline-main {
+      font-size: clamp(20px, 2.2vw, 36px);
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.25;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+      transition: opacity 0.25s ease;
+    }
+    .headline-sub {
+      font-size: clamp(14px, 1.3vw, 21px);
+      font-weight: 500;
+      color: #fde047;
+      margin-top: 2px;
+    }
+
+    /* แถบข้อความจากทางบ้านด้านล่างสุด */
+    .viewer-sms-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 7.8%;
+      min-height: 40px;
+      background: #090d16;
+      border-top: 2px solid #3b82f6;
+      display: flex;
+      align-items: center;
+      z-index: 15;
+    }
+    .sms-label {
+      background: linear-gradient(90deg, #2563eb, #1d4ed8);
+      color: #fff;
+      height: 100%;
+      padding: 0 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: clamp(13px, 1.2vw, 18px);
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: 4px 0 12px rgba(0,0,0,0.6);
+      z-index: 2;
+    }
+    .sms-pulse-icon {
+      display: inline-block;
+      animation: bounceIcon 1.5s infinite;
+    }
+    .sms-content-area {
+      flex: 1;
+      padding: 0 20px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+    }
+    .sms-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: clamp(14px, 1.3vw, 20px);
+      white-space: nowrap;
+      animation: slideUpText 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .sms-sender {
+      background: rgba(250, 204, 21, 0.18);
+      color: #facc15;
+      border: 1px solid rgba(250, 204, 21, 0.45);
+      padding: 1px 10px;
+      border-radius: 4px;
+      font-size: 0.88em;
+      font-weight: 600;
+    }
+    .sms-text {
+      color: #f1f5f9;
+      font-weight: 500;
+    }
+
+    /* แผงควบคุมห้องส่ง (Control Room) */
+    .studio-controls {
+      width: 960px;
+      background: #1e293b;
+      padding: 16px 20px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .ctrl-box { display: flex; flex-direction: column; gap: 4px; }
+    .ctrl-box.span-2 { grid-column: span 2; }
+    .ctrl-box label { font-size: 12px; color: #94a3b8; font-weight: 500; }
+    select, input[type="text"], input[type="file"] {
+      background: #0f172a;
+      color: #fff;
+      border: 1px solid #475569;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+    }
+    input[type="file"] { padding: 4px 8px; font-size: 12px; }
+    select:focus, input[type="text"]:focus { border-color: #3b82f6; }
+
+    .btn-actions {
+      grid-column: span 4;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      padding-top: 8px;
+      border-top: 1px solid #334155;
+    }
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    button:active { transform: scale(0.96); }
+    .btn-onair { background: #dc2626; color: #fff; }
+    .btn-offair { background: #475569; color: #fff; }
+    .btn-fullscreen { background: #10b981; color: #052e16; font-weight: 700; }
+    .btn-toggle-gfx { background: #f59e0b; color: #000; }
+    .btn-send-sms { background: #2563eb; color: #fff; }
+
+    /* Keyframes สำหรับแอนิเมชันรายการข่าว */
+    @keyframes pulseLive { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.35); opacity: 0.4; } }
+    @keyframes lightSweep { 0% { left: -100%; } 40%, 100% { left: 160%; } }
+    @keyframes slideInLeft { from { transform: translateX(-40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes fadeInDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes floatLogo { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-4px); } }
+    @keyframes bounceIcon { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+    @keyframes slideUpText {
+      from { transform: translateY(24px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- หน้าจอทีวีรายการข่าวสด (ดับเบิลคลิกเพื่อขยายเต็มจอได้) -->
+  <div class="tv-screen" id="tvScreen" ondblclick="toggleFullscreen()" title="ดับเบิลคลิกเพื่อขยายเต็มจอ">
+    <video id="liveVideo" autoplay playsinline muted></video>
+
+    <!-- มุมซ้ายบน: พื้นที่รายงานสด -->
+    <div class="location-bug">
+      <span>📍 รายงานสด : <strong id="displayLocation">รร.บ้านโนนจั่นฯ จ.ขอนแก่น</strong></span>
+    </div>
+
+    <!-- มุมขวาบน: โลโก้รายการ/ช่อง + สด + นาฬิกา -->
+    <div class="channel-bug">
+      <!-- โลโก้ข้อความ (แสดงเริ่มต้น) -->
+      <div class="channel-logo-text" id="defaultLogoBox">
+        <span id="displayChannel">DLTV 36</span>
+        <span class="hd-badge">HD</span>
+      </div>
+      <!-- โลโก้รูปภาพ (แสดงเมื่ออัปโหลดไฟล์) -->
+      <img id="customLogoImg" class="custom-logo-img" alt="Program Logo">
+
+      <div class="live-clock-row">
+        <div class="live-pill" id="liveIndicator" style="display:none;">
+          <span class="live-dot"></span> สด
+        </div>
+        <div class="clock-text" id="liveClock">00:00:00</div>
+      </div>
+    </div>
+
+    <!-- กราฟิกพาดหัวข่าว (Lower Third) -->
+    <div class="lower-third-wrapper" id="lowerThirdBox">
+      <div class="program-bar">
+        <div class="program-name" id="displayProgram">ข่าวเที่ยงทันเหตุการณ์</div>
+        <div class="anchor-tag" id="displayAnchor">ผู้ประกาศ : ณัฐพล ชั้นกระโทก</div>
+      </div>
+      <div class="headline-box">
+        <div class="headline-main" id="displayHeadline">เกาะติดสถานการณ์ล่าสุด! ประชาชนแห่ติดตามความคืบหน้าใกล้ชิด</div>
+        <div class="headline-sub" id="displaySubHeadline">ส่งข้อความแสดงความคิดเห็นจากทางบ้านได้ทางแถบด้านล่างตลอดรายการ</div>
+      </div>
+    </div>
+
+    <!-- แถบข้อความจากทางบ้านด้านล่างสุด -->
+    <div class="viewer-sms-bar">
+      <div class="sms-label"><span class="sms-pulse-icon">💬</span> ข้อความจากทางบ้าน</div>
+      <div class="sms-content-area" id="smsContentArea">
+        <div class="sms-item">
+          <span class="sms-sender">คุณสมชาย (ขอนแก่น)</span>
+          <span class="sms-text">ติดตามรับชมอยู่ครับ ภาพและเสียงชัดเจนมากครับ</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- แผงควบคุมห้องส่ง (Control Room) -->
+  <div class="studio-controls">
+    <div class="ctrl-box">
+      <label>กล้องถ่ายทอดสด (Iriun Webcam)</label>
+      <select id="cameraSelect"></select>
+    </div>
+
+    <div class="ctrl-box">
+      <label>อัปโหลดภาพโลโก้รายการ (PNG/JPG)</label>
+      <input type="file" id="logoUploader" accept="image/*" onchange="handleLogoUpload(event)">
+    </div>
+
+    <div class="ctrl-box">
+      <label>ขนาดโลโก้รูปภาพ (<span id="logoSizeLabel">75</span> px)</label>
+      <input type="range" min="40" max="160" value="75" oninput="resizeCustomLogo(this.value)">
+    </div>
+
+    <div class="ctrl-box">
+      <label>จุดรายงานสด (มุมซ้ายบน)</label>
+      <input type="text" value="อ.แก้งคร้อ จ.ชัยภูมิ" oninput="document.getElementById('displayLocation').textContent = this.value">
+    </div>
+
+    <div class="ctrl-box">
+      <label>ชื่อรายการข่าว</label>
+      <input type="text" value="ข่าวเที่ยงทันเหตุการณ์" oninput="document.getElementById('displayProgram').textContent = this.value">
+    </div>
+
+    <div class="ctrl-box">
+      <label>ชื่อผู้ประกาศข่าว</label>
+      <input type="text" value="ณัฐพล ชั้นกระโทก" oninput="document.getElementById('displayAnchor').textContent = 'ผู้ประกาศ : ' + this.value">
+    </div>
+
+    <div class="ctrl-box span-2">
+      <label>พาดหัวข่าวตัวใหญ่ (Headline)</label>
+      <input type="text" value="เกาะติดสถานการณ์ล่าสุด! ประชาชนแห่ติดตามความคืบหน้าใกล้ชิด" oninput="updateHeadlineAnimated(this.value)">
+    </div>
+
+    <div class="ctrl-box span-2">
+      <label>พาดหัวข่าวรอง (Sub-headline)</label>
+      <input type="text" value="ส่งข้อความแสดงความคิดเห็นจากทางบ้านได้ทางแถบด้านล่างตลอดรายการ" oninput="document.getElementById('displaySubHeadline').textContent = this.value">
+    </div>
+
+    <div class="ctrl-box span-2" style="justify-content: flex-end;">
+      <div style="display:flex; gap:6px;">
+        <input type="text" id="customSender" placeholder="ชื่อผู้ส่ง (เช่น ครูแจ็ค โคราช)" style="width: 40%;">
+        <input type="text" id="customSmsText" placeholder="พิมพ์ข้อความทางบ้านขึ้นจอทันที..." style="width: 60%;" onkeypress="if(event.key==='Enter') pushCustomSms()">
+      </div>
+    </div>
+
+    <div class="btn-actions">
+      <button class="btn-onair" onclick="startLive()">🔴 ON AIR (เริ่มออกอากาศ)</button>
+      <button class="btn-offair" onclick="stopLive()">⏹ ตัดสัญญาณ</button>
+      <button class="btn-fullscreen" onclick="toggleFullscreen()">⛶ ขยายเต็มจอ (เฉพาะหน้า Live)</button>
+      <button class="btn-toggle-gfx" onclick="toggleLowerThird()">🎞️ ซ่อน/แสดง แถบพาดหัวข่าว</button>
+      <button class="btn-send-sms" style="margin-left: auto;" onclick="pushCustomSms()">💬 ส่งข้อความขึ้นจอ</button>
+    </div>
+  </div>
+
+  <script>
+    const tvScreen = document.getElementById('tvScreen');
+    const videoEl = document.getElementById('liveVideo');
+    const cameraSelect = document.getElementById('cameraSelect');
+    const smsContentArea = document.getElementById('smsContentArea');
+    const liveIndicator = document.getElementById('liveIndicator');
+    const lowerThirdBox = document.getElementById('lowerThirdBox');
+    let currentStream = null;
+    let smsInterval = null;
+
+    const viewerMessages = [
+      { sender: "คุณสมศักดิ์ (จ.นครราชสีมา)", text: "สวัสดีครับผู้ประกาศ ติดตามดูทุกวันเลยครับ รายงานละเอียดเข้าใจง่ายมาก" },
+      { sender: "แม่ค้าตลาดเช้า (จ.ขอนแก่น)", text: "เปิดทีวีดูอยู่ที่ร้านครับ ภาพคมชัดเหมือนอยู่หน้างานเลย" },
+      { sender: "คุณนภา (จ.ชัยภูมิ)", text: "ทางนี้ฝนกำลังตั้งเค้ามืดมาเลยครับ ฝากเตือนพี่น้องผู้ใช้รถใช้ถนนด้วย" },
+      { sender: "ช่างเอก (จ.บุรีรัมย์)", text: "เห็นด้วยกับประเด็นนี้ครับ อยากให้หน่วยงานที่เกี่ยวข้องเร่งเข้ามาดูแล" },
+      { sender: "คุณกิตติพงษ์ (กรุงเทพฯ)", text: "ขอเป็นกำลังใจให้ทีมข่าวภาคสนามทุกท่านครับ สู้ๆ ครับ" },
+      { sender: "ครูแต้ว (จ.อุดรธานี)", text: "เด็กๆ ที่โรงเรียนกำลังนั่งดูข่าวสดอยู่เลยค่ะ ชอบช่วงรายงานสดมาก" }
+    ];
+    let msgIndex = 0;
+
+    // 1. ฟังก์ชันขยายเต็มจอเฉพาะตัวหน้า Live
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        tvScreen.requestFullscreen().catch(err => {
+          alert(`ไม่สามารถขยายเต็มจอได้: ${err.message}`);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // 2. ฟังก์ชันอัปโหลดภาพโลโก้รายการ
+    function handleLogoUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const imgEl = document.getElementById('customLogoImg');
+        imgEl.src = e.target.result;
+        imgEl.style.display = 'block';
+        document.getElementById('defaultLogoBox').style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function resizeCustomLogo(val) {
+      document.getElementById('logoSizeLabel').textContent = val;
+      document.getElementById('customLogoImg').style.maxHeight = val + 'px';
+    }
+
+    // 3. ซ่อน/แสดง แถบพาดหัวข่าวแบบมีแอนิเมชันห้องส่ง
+    function toggleLowerThird() {
+      lowerThirdBox.classList.toggle('hidden');
+    }
+
+    function updateHeadlineAnimated(text) {
+      const el = document.getElementById('displayHeadline');
+      el.style.opacity = '0.3';
+      setTimeout(() => {
+        el.textContent = text;
+        el.style.opacity = '1';
+      }, 150);
+    }
+
+    // 4. นาฬิกาเรียลไทม์
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('liveClock').textContent = now.toLocaleTimeString('th-TH', { hour12: false }) + " น.";
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // 5. โหลดรายชื่อกล้อง
+    async function loadCameras() {
+      try {
+        const temp = await navigator.mediaDevices.getUserMedia({ video: true });
+        temp.getTracks().forEach(t => t.stop());
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cams = devices.filter(d => d.kind === 'videoinput');
+        cameraSelect.innerHTML = '';
+        cams.forEach((cam, idx) => {
+          const opt = document.createElement('option');
+          opt.value = cam.deviceId;
+          opt.text = cam.label || `Camera ${idx + 1}`;
+          if (opt.text.toLowerCase().includes('iriun')) opt.selected = true;
+          cameraSelect.appendChild(opt);
+        });
+      } catch (e) {
+        console.warn("กรุณารันผ่าน localhost เพื่อเปิดใช้งานกล้อง:", e);
+      }
+    }
+
+    // 6. เริ่มออกอากาศสด
+    async function startLive() {
+      stopLive();
+      try {
+        currentStream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: cameraSelect.value ? { exact: cameraSelect.value } : undefined, width: 1920, height: 1080 },
+          audio: false
+        });
+        videoEl.srcObject = currentStream;
+        liveIndicator.style.display = 'flex';
+
+        smsInterval = setInterval(() => {
+          msgIndex = (msgIndex + 1) % viewerMessages.length;
+          renderSms(viewerMessages[msgIndex].sender, viewerMessages[msgIndex].text);
+        }, 4500);
+      } catch (err) {
+        alert("ไม่สามารถเชื่อมต่อกล้องได้: " + err.message);
+      }
+    }
+
+    function stopLive() {
+      if (currentStream) {
+        currentStream.getTracks().forEach(t => t.stop());
+        videoEl.srcObject = null;
+      }
+      liveIndicator.style.display = 'none';
+      clearInterval(smsInterval);
+    }
+
+    function renderSms(sender, text) {
+      smsContentArea.innerHTML = `
+        <div class="sms-item">
+          <span class="sms-sender">${sender}</span>
+          <span class="sms-text">${text}</span>
+        </div>
+      `;
+    }
+
+    function pushCustomSms() {
+      const senderInput = document.getElementById('customSender');
+      const textInput = document.getElementById('customSmsText');
+      if (!textInput.value.trim()) return;
+
+      const sender = senderInput.value.trim() || "ผู้ชมทางบ้าน (SMS)";
+      const text = textInput.value.trim();
+
+      viewerMessages.splice(msgIndex + 1, 0, { sender, text });
+      renderSms(sender, text);
+      textInput.value = '';
+    }
+
+    loadCameras();
+  </script>
+</body>
+</html>

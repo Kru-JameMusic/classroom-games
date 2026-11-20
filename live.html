@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TikTok Live Simulator (Iriun Webcam)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body {
+      background-color: #0e0e10;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      gap: 24px;
+      padding: 16px;
+    }
+
+    /* กล่องครอบสำหรับโหมด Fullscreen (ทำหน้าที่เป็นพื้นหลังสีดำเต็มจอ) */
+    .fullscreen-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .fullscreen-wrapper:fullscreen {
+      width: 100vw;
+      height: 100vh;
+      background-color: #000;
+      padding: 0;
+    }
+
+    /* กรอบมือถือจำลองสัดส่วน 9:16 */
+    .phone-frame {
+      position: relative;
+      width: 405px;
+      height: 720px;
+      background: #000;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 0 2px #2a2a2e;
+    }
+
+    /* บังคับให้กรอบมือถือยังคงเป็นแนวตั้ง 9:16 เสมอเมื่ออยู่ในโหมด Fullscreen */
+    .fullscreen-wrapper:fullscreen .phone-frame {
+      height: 100vh;
+      width: calc(100vh * (9 / 16));
+      max-width: 100vw;
+      border-radius: 0;
+      box-shadow: 0 0 0 1px #222;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(1); /* เปลี่ยนเป็น -1 หากต้องการกลับด้านซ้ายขวา (Mirror) */
+    }
+
+    /* เงาไล่ระดับด้านบนและล่างเพื่อให้อ่านตัวหนังสือชัด */
+    .gradient-top {
+      position: absolute; top: 0; left: 0; right: 0; height: 110px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.65), transparent);
+      pointer-events: none;
+    }
+    .gradient-bottom {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 280px;
+      background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
+      pointer-events: none;
+    }
+
+    /* แถบด้านบน: โปรไฟล์ + ป้าย LIVE + ยอดคนดู */
+    .top-bar {
+      position: absolute; top: 16px; left: 14px; right: 14px;
+      display: flex; justify-content: space-between; align-items: center;
+      z-index: 10;
+    }
+    .streamer-pill {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(6px);
+      padding: 4px 12px 4px 4px;
+      border-radius: 999px;
+    }
+    .avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(45deg, #fe2c55, #25f4ee);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 14px;
+    }
+    .streamer-info .name { font-size: 13px; font-weight: 600; }
+    .streamer-info .likes { font-size: 11px; color: #ddd; }
+    .follow-btn {
+      background: #fe2c55; color: #fff; border: none;
+      padding: 5px 12px; border-radius: 999px;
+      font-size: 12px; font-weight: 600; margin-left: 4px; cursor: pointer;
+    }
+
+    .status-group { display: flex; align-items: center; gap: 6px; }
+    .live-tag {
+      background: #fe2c55; padding: 4px 8px; border-radius: 4px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+      animation: pulse 1.5s infinite;
+    }
+    .viewer-tag {
+      background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(6px);
+      padding: 4px 10px; border-radius: 999px;
+      font-size: 12px; font-weight: 600;
+    }
+
+    /* แถบแจ้งเตือนการส่งของขวัญ (Gift Banner) */
+    .gift-banner-area {
+      position: absolute; top: 150px; left: 14px; right: 60px;
+      display: flex; flex-direction: column; gap: 8px;
+      z-index: 15; pointer-events: none;
+    }
+    .gift-banner {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: linear-gradient(90deg, rgba(254,44,85,0.85), rgba(37,244,238,0.45));
+      backdrop-filter: blur(8px);
+      padding: 6px 14px 6px 6px;
+      border-radius: 999px;
+      width: fit-content;
+      animation: slideInLeft 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 4px 15px rgba(254, 44, 85, 0.4);
+    }
+    .gift-banner .g-avatar {
+      width: 32px; height: 32px; border-radius: 50%; background: #222;
+      display: flex; align-items: center; justify-content: center; font-size: 14px;
+    }
+    .gift-banner .g-text { font-size: 12px; line-height: 1.2; }
+    .gift-banner .g-text strong { display: block; font-size: 13px; color: #fff; }
+    .gift-banner .g-icon { font-size: 26px; }
+    .gift-banner .g-combo {
+      font-size: 18px; font-weight: 900; font-style: italic;
+      color: #ffeb3b; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    }
+
+    /* เอฟเฟกต์ของขวัญใหญ่กลางจอ */
+    .big-gift-overlay {
+      position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%) scale(0);
+      font-size: 90px; z-index: 20; pointer-events: none;
+      filter: drop-shadow(0 0 25px rgba(255, 215, 0, 0.9));
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+      opacity: 0;
+    }
+    .big-gift-overlay.show { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+
+    /* กล่องคอมเมนต์ด้านล่าง */
+    .chat-container {
+      position: absolute; bottom: 68px; left: 14px; right: 70px;
+      height: 210px;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      gap: 6px; overflow: hidden; z-index: 10;
+      mask-image: linear-gradient(to bottom, transparent 0%, black 20%);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%);
+    }
+    .chat-msg {
+      background: rgba(0, 0, 0, 0.38);
+      backdrop-filter: blur(4px);
+      padding: 5px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.35;
+      width: fit-content;
+      max-width: 100%;
+      animation: fadeUp 0.25s ease-out;
+    }
+    .chat-msg .badge {
+      background: #25f4ee; color: #000; font-size: 10px; font-weight: 700;
+      padding: 1px 5px; border-radius: 4px; margin-right: 4px;
+    }
+    .chat-msg .user { color: #8ce9ff; font-weight: 600; margin-right: 5px; }
+    .chat-msg.join { background: rgba(255, 255, 255, 0.12); color: #ddd; font-size: 12px; }
+
+    /* แถบพิมพ์คอมเมนต์ด้านล่างสุด */
+    .bottom-bar {
+      position: absolute; bottom: 14px; left: 14px; right: 14px;
+      display: flex; align-items: center; gap: 8px; z-index: 10;
+    }
+    .comment-input {
+      flex: 1; background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(6px); border: none;
+      padding: 9px 14px; border-radius: 999px;
+      color: #fff; font-size: 13px; outline: none;
+    }
+    .comment-input::placeholder { color: #ccc; }
+    .action-btn {
+      width: 36px; height: 36px; border-radius: 50%; border: none;
+      background: rgba(255, 255, 255, 0.15); color: #fff;
+      font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .action-btn:active { transform: scale(0.9); }
+
+    /* หัวใจลอยมุมขวาล่าง */
+    .floating-hearts {
+      position: absolute; bottom: 60px; right: 16px;
+      width: 40px; height: 220px; pointer-events: none; z-index: 12;
+    }
+    .heart {
+      position: absolute; bottom: 0; right: 8px;
+      font-size: 22px;
+      animation: floatHeart 2.2s ease-out forwards;
+    }
+
+    /* แผงควบคุมด้านข้างสำหรับทดสอบ */
+    .control-panel {
+      width: 320px; background: #18181b; padding: 20px;
+      border-radius: 16px; border: 1px solid #27272a;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .control-panel h3 { font-size: 16px; color: #25f4ee; border-bottom: 1px solid #27272a; padding-bottom: 8px; }
+    .control-group { display: flex; flex-direction: column; gap: 6px; }
+    .control-group label { font-size: 12px; color: #a1a1aa; }
+    select, input[type="text"] {
+      background: #27272a; color: #fff; border: 1px solid #3f3f46;
+      padding: 8px 10px; border-radius: 8px; font-size: 13px;
+    }
+    .btn-row { display: flex; gap: 8px; }
+    .btn {
+      flex: 1; padding: 9px; border: none; border-radius: 8px;
+      font-weight: 600; font-size: 13px; cursor: pointer;
+    }
+    .btn-start { background: #fe2c55; color: #fff; }
+    .btn-stop { background: #3f3f46; color: #fff; }
+    .btn-fullscreen { background: #10b981; color: #052e16; font-weight: 700; }
+    .btn-fullscreen:hover { background: #059669; color: #fff; }
+    .btn-gift { background: #27272a; color: #fff; border: 1px solid #3f3f46; }
+    .btn-gift:hover { background: #3f3f46; }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+    @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes fadeUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes floatHeart {
+      0% { transform: translateY(0) scale(0.7); opacity: 1; }
+      50% { transform: translateY(-100px) translateX(-12px) scale(1.1); opacity: 0.9; }
+      100% { transform: translateY(-200px) translateX(10px) scale(0.9); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- กล่องครอบสำหรับโหมด Fullscreen -->
+  <div class="fullscreen-wrapper" id="fullscreenWrapper">
+    <!-- หน้าจอจำลอง TikTok Live (ดับเบิลคลิกเพื่อขยายเต็มจอได้) -->
+    <div class="phone-frame" id="phoneFrame" ondblclick="toggleFullscreen()" title="ดับเบิลคลิกเพื่อขยายเต็มจอ">
+      <video id="liveVideo" autoplay playsinline muted></video>
+      <div class="gradient-top"></div>
+      <div class="gradient-bottom"></div>
+
+      <!-- แถบด้านบน -->
+      <div class="top-bar">
+        <div class="streamer-pill">
+          <div class="avatar">🎸</div>
+          <div class="streamer-info">
+            <div class="name" id="displayStreamer">Studio Live</div>
+            <div class="likes">❤️ <span id="likeCount">12.4K</span></div>
+          </div>
+          <button class="follow-btn" onclick="this.textContent='กำลังติดตาม'; this.style.background='#333'">ติดตาม</button>
+        </div>
+        <div class="status-group">
+          <span class="live-tag" id="liveBadge" style="display:none;">LIVE</span>
+          <span class="viewer-tag">👁 <span id="viewerCount">0</span></span>
+        </div>
+      </div>
+
+      <!-- แถบป้ายส่งของขวัญ -->
+      <div class="gift-banner-area" id="giftBannerArea"></div>
+
+      <!-- เอฟเฟกต์ของขวัญใหญ่กลางจอ -->
+      <div class="big-gift-overlay" id="bigGiftOverlay">🦁</div>
+
+      <!-- กล่องแชท -->
+      <div class="chat-container" id="chatContainer"></div>
+
+      <!-- หัวใจลอย -->
+      <div class="floating-hearts" id="floatingHearts"></div>
+
+      <!-- ช่องพิมพ์ด้านล่าง -->
+      <div class="bottom-bar">
+        <input type="text" class="comment-input" id="userCommentInput" placeholder="เพิ่มความคิดเห็น..." onkeypress="if(event.key==='Enter') sendManualComment()">
+        <button class="action-btn" onclick="triggerManualGift('🌹', 'ดอกกุหลาบ', 1, false)" title="ส่งดอกกุหลาบ">🌹</button>
+        <button class="action-btn" onclick="spawnHeart()" title="กดหัวใจ">❤️</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- แผงควบคุมการจำลอง -->
+  <div class="control-panel">
+    <h3>🎛️ แผงควบคุมการจำลอง Live</h3>
+
+    <div class="control-group">
+      <label>1. เลือกกล้อง (Iriun Webcam)</label>
+      <select id="cameraSelect"></select>
+    </div>
+
+    <div class="control-group">
+      <label>2. ชื่อช่องที่กำลัง Live</label>
+      <input type="text" id="streamerNameInput" value="ครูณัฐพล Music & Gear" oninput="document.getElementById('displayStreamer').textContent = this.value">
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-start" onclick="startLive()">▶ เริ่ม Live</button>
+      <button class="btn btn-stop" onclick="stopLive()">⏹ หยุด Live</button>
+    </div>
+
+    <!-- ปุ่มขยายเต็มจอ -->
+    <button class="btn btn-fullscreen" onclick="toggleFullscreen()">⛶ ขยายเต็มจอ (เฉพาะหน้า Live)</button>
+
+    <div class="control-group">
+      <label>3. ทดสอบกดส่งของขวัญพิเศษทันที</label>
+      <div class="btn-row">
+        <button class="btn btn-gift" onclick="triggerManualGift('🌹', 'ดอกกุหลาบ', 5, false)">🌹 กุหลาบ x5</button>
+        <button class="btn btn-gift" onclick="triggerManualGift('🏎️', 'รถสปอร์ต', 1, true)">🏎️ รถสปอร์ต</button>
+        <button class="btn btn-gift" onclick="triggerManualGift('🦁', 'สิงโต', 1, true)">🦁 สิงโต</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:#fff;">
+        <input type="checkbox" id="autoBotToggle" checked> เปิดบอทคอมเมนต์ + ส่งของขวัญอัตโนมัติ
+      </label>
+    </div>
+  </div>
+
+  <script>
+    const fullscreenWrapper = document.getElementById('fullscreenWrapper');
+    const videoEl = document.getElementById('liveVideo');
+    const cameraSelect = document.getElementById('cameraSelect');
+    const chatContainer = document.getElementById('chatContainer');
+    const giftBannerArea = document.getElementById('giftBannerArea');
+    const bigGiftOverlay = document.getElementById('bigGiftOverlay');
+    const floatingHearts = document.getElementById('floatingHearts');
+
+    let currentStream = null;
+    let isLive = false;
+    let botTimer = null;
+    let heartTimer = null;
+    let viewers = 128;
+    let likes = 12400;
+
+    // ฟังก์ชันขยายเต็มจอโดยรักษาสัดส่วนแนวตั้ง 9:16 ไว้ตรงกลาง
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        fullscreenWrapper.requestFullscreen().catch(err => {
+          alert(`ไม่สามารถขยายเต็มจอได้: ${err.message}`);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // ข้อมูลจำลองสำหรับบอท
+    const mockUsers = [
+      "น้องบีม_99", "ช่างเอ็ม_โคราช", "GuitarLover_TH", "Ploy_Chaiyaphum",
+      "สายชิลล์_2026", "Kittipong_M", "Nok_น้อย", "Ton_SoundCheck",
+      "แม่ค้าออนไลน์", "Pimmy_Smile", "เด็กดนตรี_BRU", "Jame_Rider"
+    ];
+
+    const mockComments = [
+      "ภาพชัดมากครับพี่!", "ใช้กล้องอะไรไลฟ์ครับเนี่ย คมกริบเลย",
+      "สวัสดีครับผม ติดตามตลอดเลยครับ", "เสียงดีมากครับ ชอบๆ 🔥",
+      "ทางนี้ฝนตกไหมครับ", "แวะมาให้กำลังใจครับสู้ๆ ❤️",
+      "ขอเพลงเพราะๆ สักเพลงครับ", "ภาพลื่นไม่มีกระตุกเลยครับ",
+      "FC ครับผม จากขอนแก่นครับ", "สุดยอดเลยครับอาจารย์ 👏👏"
+    ];
+
+    const mockGifts = [
+      { icon: "🌹", name: "ดอกกุหลาบ", count: 1, big: false },
+      { icon: "💖", name: "หัวใจคู่", count: 3, big: false },
+      { icon: "☕", name: "กาแฟยามเช้า", count: 1, big: false },
+      { icon: "🎸", name: "กีตาร์ไฟฟ้า", count: 1, big: true },
+      { icon: "🚀", name: "จรวดอวกาศ", count: 1, big: true },
+      { icon: "🦁", name: "สิงโตเจ้าป่า", count: 1, big: true }
+    ];
+
+    // 1. โหลดรายชื่อกล้อง
+    async function loadCameras() {
+      try {
+        const temp = await navigator.mediaDevices.getUserMedia({ video: true });
+        temp.getTracks().forEach(t => t.stop());
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cams = devices.filter(d => d.kind === 'videoinput');
+        cameraSelect.innerHTML = '';
+        cams.forEach((cam, idx) => {
+          const opt = document.createElement('option');
+          opt.value = cam.deviceId;
+          opt.text = cam.label || `Camera ${idx + 1}`;
+          if (opt.text.toLowerCase().includes('iriun')) opt.selected = true;
+          cameraSelect.appendChild(opt);
+        });
+      } catch (e) {
+        console.warn("กรุณาอนุญาตการใช้กล้องผ่าน localhost:", e);
+      }
+    }
+
+    // 2. เริ่มการ Live
+    async function startLive() {
+      stopLive();
+      try {
+        currentStream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: cameraSelect.value ? { exact: cameraSelect.value } : undefined, width: 1280, height: 720 },
+          audio: false
+        });
+        videoEl.srcObject = currentStream;
+        isLive = true;
+        document.getElementById('liveBadge').style.display = 'inline-block';
+        viewers = Math.floor(Math.random() * 150) + 80;
+        updateStats();
+        startSimulationLoops();
+      } catch (err) {
+        alert("ไม่สามารถเชื่อมต่อกล้องได้: " + err.message);
+      }
+    }
+
+    function stopLive() {
+      isLive = false;
+      if (currentStream) {
+        currentStream.getTracks().forEach(t => t.stop());
+        videoEl.srcObject = null;
+      }
+      document.getElementById('liveBadge').style.display = 'none';
+      clearTimeout(botTimer);
+      clearInterval(heartTimer);
+    }
+
+    // 3. ลูปการทำงานอัตโนมัติ (คอมเมนต์ + ของขวัญ + หัวใจ + คนดู)
+    function startSimulationLoops() {
+      // หัวใจลอยขึ้นเรื่อยๆ
+      heartTimer = setInterval(() => {
+        if (!isLive) return;
+        spawnHeart();
+        likes += Math.floor(Math.random() * 5) + 1;
+        updateStats();
+      }, 650);
+
+      // สุ่มเหตุการณ์คอมเมนต์ / คนเข้าห้อง / ส่งของขวัญ
+      function scheduleNextEvent() {
+        if (!isLive) return;
+        const delay = Math.floor(Math.random() * 1800) + 900;
+        botTimer = setTimeout(() => {
+          if (document.getElementById('autoBotToggle').checked) {
+            const rand = Math.random();
+            const user = mockUsers[Math.floor(Math.random() * mockUsers.length)];
+
+            if (rand < 0.65) {
+              const text = mockComments[Math.floor(Math.random() * mockComments.length)];
+              addChatMessage(user, text, false);
+            } else if (rand < 0.85) {
+              addChatMessage(user, "เข้าร่วมไลฟ์แล้ว", true);
+              viewers += Math.floor(Math.random() * 4) + 1;
+            } else {
+              const gift = mockGifts[Math.floor(Math.random() * mockGifts.length)];
+              showGift(user, gift.icon, gift.name, gift.count, gift.big);
+            }
+            updateStats();
+          }
+          scheduleNextEvent();
+        }, delay);
+      }
+      scheduleNextEvent();
+    }
+
+    function addChatMessage(user, text, isJoin = false) {
+      const div = document.createElement('div');
+      div.className = isJoin ? 'chat-msg join' : 'chat-msg';
+      if (isJoin) {
+        div.innerHTML = `<strong>${user}</strong> ${text}`;
+      } else {
+        const level = Math.floor(Math.random() * 25) + 1;
+        div.innerHTML = `<span class="badge">💎${level}</span><span class="user">${user}:</span>${text}`;
+      }
+      chatContainer.appendChild(div);
+      if (chatContainer.children.length > 12) {
+        chatContainer.removeChild(chatContainer.firstChild);
+      }
+    }
+
+    function showGift(user, icon, giftName, count, isBig) {
+      const banner = document.createElement('div');
+      banner.className = 'gift-banner';
+      banner.innerHTML = `
+        <div class="g-avatar">🎁</div>
+        <div class="g-text">
+          <strong>${user}</strong>
+          <span>ส่ง ${giftName}</span>
+        </div>
+        <div class="g-icon">${icon}</div>
+        <div class="g-combo">x${count}</div>
+      `;
+      giftBannerArea.appendChild(banner);
+      addChatMessage(user, `ส่งของขวัญ ${giftName} ${icon} x${count}`, false);
+
+      setTimeout(() => {
+        banner.style.opacity = '0';
+        banner.style.transition = 'opacity 0.4s';
+        setTimeout(() => banner.remove(), 400);
+      }, 3000);
+
+      if (isBig) {
+        bigGiftOverlay.textContent = icon;
+        bigGiftOverlay.classList.add('show');
+        setTimeout(() => bigGiftOverlay.classList.remove('show'), 2200);
+      }
+    }
+
+    function sendManualComment() {
+      const input = document.getElementById('userCommentInput');
+      if (!input.value.trim()) return;
+      addChatMessage("คุณ (ผู้ชม)", input.value.trim(), false);
+      input.value = '';
+    }
+
+    function triggerManualGift(icon, name, count, isBig) {
+      showGift("แฟนตัวยง_VIP", icon, name, count, isBig);
+    }
+
+    function spawnHeart() {
+      const heart = document.createElement('div');
+      heart.className = 'heart';
+      const colors = ['❤️', '💖', '🧡', '💜', '💙'];
+      heart.textContent = colors[Math.floor(Math.random() * colors.length)];
+      heart.style.right = (Math.floor(Math.random() * 24) + 2) + 'px';
+      floatingHearts.appendChild(heart);
+      setTimeout(() => heart.remove(), 2200);
+    }
+
+    function updateStats() {
+      document.getElementById('viewerCount').textContent = viewers.toLocaleString();
+      document.getElementById('likeCount').textContent = (likes / 1000).toFixed(1) + 'K';
+    }
+
+    loadCameras();
+  </script>
+</body>
+</html>
